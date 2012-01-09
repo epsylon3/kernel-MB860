@@ -307,8 +307,8 @@ endif
 
 $(TARGET_PREBUILT_KERNEL): kernel
 
-#device/motorola/olympus/kernel: $(TARGET_PREBUILT_KERNEL)
-#	cp $(KERNEL_BUILD_DIR)/arch/arm/boot/zImage $(ANDROID_BUILD_TOP)/device/motorola/olympus/kernel
+device/motorola/olympus/kernel: $(TARGET_PREBUILT_KERNEL)
+	cp $(KERNEL_BUILD_DIR)/arch/arm/boot/zImage $(ANDROID_BUILD_TOP)/device/motorola/olympus/kernel
 
 $(INSTALLED_KERNEL_TARGET): $(TARGET_PREBUILT_KERNEL) | $(ACP)
 	$(transform-prebuilt-to-target)
