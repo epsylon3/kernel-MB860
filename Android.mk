@@ -302,34 +302,27 @@ wlan_dhd_clean:
 #
 # The below rules are for the Android build system
 #-------------------------------------------------
-ifneq ($(DO_NOT_REBUILD_THE_KERNEL),1)
-.PHONY: $(TARGET_PREBUILT_KERNEL)
-endif
-
 $(TARGET_PREBUILT_KERNEL): kernel
 
-#device/motorola/olympus/kernel: $(TARGET_PREBUILT_KERNEL)
-#	cp $(KERNEL_BUILD_DIR)/arch/arm/boot/zImage $(ANDROID_BUILD_TOP)/device/motorola/olympus/kernel
-
-$(INSTALLED_KERNEL_TARGET): $(TARGET_PREBUILT_KERNEL) | $(ACP)
-	$(transform-prebuilt-to-target)
-
-#
-# install kernel modules into system image
-#-----------------------------------------
-# dummy.ko is used for system image dependency
-TARGET_DUMMY_MODULE := $(MOTO_MOD_INSTALL)/dummy.ko
-ALL_PREBUILT += $(TARGET_DUMMY_MODULE)
-$(TARGET_DUMMY_MODULE): kernel kernel_modules_install
-	$(API_MAKE) -C $(WLAN_DHD_PATH)
+ifneq ($(DO_NOT_REBUILD_THE_KERNEL),1)
+.PHONY: $(TARGET_PREBUILT_KERNEL)
+device/motorola/olympus/kernel: $(TARGET_PREBUILT_KERNEL) kernel ext_kernel_modules kernel_modules_install
 	mkdir -p $(MOTO_MOD_INSTALL)
-	rm -f $(MOTO_MOD_INSTALL)/dummy.ko
+	cp $(KERNEL_BUILD_DIR)/arch/arm/boot/zImage $(ANDROID_BUILD_TOP)/device/motorola/olympus/kernel
+	rm -f $(ANDROID_BUILD_TOP)/device/motorola/olympus/modules/*.ko
 	find $(KERNEL_BUILD_DIR)/lib/modules -name "*.ko" -exec cp -f {} \
 		$(MOTO_MOD_INSTALL) \; || true
 	cp $(WLAN_DHD_PATH)/dhd.ko $(MOTO_MOD_INSTALL)
 	$(KERNEL_CROSS_COMPILE)strip --strip-debug $(MOTO_MOD_INSTALL)/*.ko
 	cp $(KERNEL_BUILD_DIR)/arch/arm/boot/zImage $(PRODUCT_OUT)/kernel
-	touch $(MOTO_MOD_INSTALL)/dummy.ko
+	find $(KERNEL_BUILD_DIR) -name "*.ko" -exec cp -f {} $(MOTO_MOD_INSTALL)/ \;
+	find $(MOTO_MOD_INSTALL) -name "*.ko" -exec arm-linux-androideabi-strip --strip-debug {} \;
+	touch $(PRODUCT_OUT)/kernel_post_install
+
+$(INSTALLED_KERNEL_TARGET): $(TARGET_PREBUILT_KERNEL) | $(ACP)
+	$(transform-prebuilt-to-target)
+
+endif
 
 ROOTDIR :=
 
