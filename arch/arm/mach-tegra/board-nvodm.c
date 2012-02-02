@@ -796,7 +796,9 @@ static void __init tegra_setup_hcd(void)
 static inline void tegra_setup_hcd(void) { }
 #endif
 
-#ifdef CONFIG_KEYBOARD_TEGRA
+struct tegra_kbc_platform_data tegra_kbc_platform;
+#if 0 
+def CONFIG_KEYBOARD_TEGRA
 struct tegra_kbc_plat tegra_kbc_platform;
 
 static noinline void __init tegra_setup_kbc(void)
