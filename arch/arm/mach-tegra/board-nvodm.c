@@ -894,6 +894,7 @@ static noinline void __init tegra_setup_kbc(void)
 					sc = vkeys[k]->pVirtualKeyTable[sc];
 					if (!sc) continue;
 					pdata->keymap[kbc_indexof(i,j)]=sc;
+					pr_info("kbc: row/col=%d,%d(%d) = sc %d(0x%x)\n", i,j, kbc_indexof(i,j), sc, sc);
 				}
 
                         }
