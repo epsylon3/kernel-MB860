@@ -192,3 +192,5 @@ obj-${CONFIG_MACH_ADAM}              += board-adam-pm-gps.o
 obj-${CONFIG_MACH_ADAM}              += board-adam-pm-gsm.o
 #obj-${CONFIG_MACH_ADAM}              += board-adam-pm-wlan.o
 
+obj-$(CONFIG_MACH_MOT)                  += board-mot.o board-mot-power.o board-mot-lights.o board-mot-touch.o board-mot-sensors.o board-mot-misc.o board-mot-modem.o board-mot-wlan.o board-mot-usb.o board-mot-camera.o
+

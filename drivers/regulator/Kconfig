@@ -348,5 +348,15 @@ config REGULATOR_AAT2870
 	  If you have a AnalogicTech AAT2870 say Y to enable the
 	  regulator driver.
 
+config REGULATOR_TEGRA
+       boolean "Regulator support on NVIDIA Tegra SoCs"
+       depends on ARCH_TEGRA && TEGRA_NVRM
+
+config REGULATOR_CPCAP
+       tristate "CPCAP regulator driver"
+         depends on MFD_CPCAP
+       help
+        Say Y here to support the voltage regulators on CPCAP
+
 endif
 

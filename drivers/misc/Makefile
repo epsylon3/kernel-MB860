@@ -56,3 +56,15 @@ obj-$(CONFIG_MPU_SENSORS_MPU3050)	+= mpu3050/
 obj-$(CONFIG_TEGRA_CRYPTO_DEV)	+= tegra-cryptodev.o
 obj-$(CONFIG_MAX1749_VIBRATOR)	+= max1749.o
 obj-$(CONFIG_SENSORS_MMC31XX)   += mmc31xx.o
+
+obj-$(CONFIG_APANIC_MMC)	+= apanic_handle_mmc.o apanic_report_block.o
+obj-$(CONFIG_MOT_SEC_DRIVER)	+= sec/
+obj-$(CONFIG_MOT_FEAT_TS27010MUX) += ts27010mux/
+obj-$(CONFIG_MOT_TCMD_DRIVER)	+= tcmd_driver.o
+
+obj-$(CONFIG_VIB_GPIO)		+= vib-gpio.o
+obj-$(CONFIG_VIB_PWM)		+= vib-pwm.o
+obj-$(CONFIG_SENSORS_KXTF9)	+= kxtf9.o
+obj-$(CONFIG_MDM_CTRL)		+= mdm_ctrl.o
+obj-$(CONFIG_MISC_NVODMCAM)	+= nvodmcam.o
+

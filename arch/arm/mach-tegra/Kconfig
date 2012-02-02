@@ -391,4 +391,71 @@ config TEGRA_EDP_EXACT_FREQ
 	  When enabled the cpu will run at the exact frequency
 	  specified in the EDP table when EDP capping is applied; when
 	  disabled the next lower cpufreq frequency will be used.
+
+if TEGRA_ODM_KIT
+source "arch/arm/mach-tegra/odm_kit/Kconfig"
 endif
+
+config MACH_MOT
+	bool "Motorola AP20 Products"
+	default n
+	select BOOTINFO
+
+config INPUT_MOT_WEBTOP
+	tristate "Input Motorola Webtop Devices"
+	depends on MACH_MOT
+	default n
+
+config MOT_ALLOW_FB_OPEN
+	boolean "Allow framebuffer open regardless of hardware info"
+	depends on MACH_MOT
+	default y
+
+config WIFI_CONTROL_EXPORT
+	bool "Export wlan ctrl functions and IRQ for the DHD kernel module"
+	depends on MACH_MOT
+	default n
+
+config FAKE_SHMOO
+        bool "Tegra2 Overclocking Enable"
+        depends on ARCH_TEGRA_2x_SOC
+        default y
+
+config BOOST_PERIPHERALS
+        bool "Tegra2 Overclocking Peripheral Enable"
+        depends on ARCH_TEGRA_2x_SOC && FAKE_SHMOO
+        default y
+
+config MAX_AVP_OC_FREQ
+        int "AVP Overclock Frequency"
+        default 266400
+        depends on FAKE_SHMOO && BOOST_PERIPHERALS
+
+config MAX_3D_OC_FREQ
+        int "3D Overclock Frequency"
+        default 350000
+        depends on FAKE_SHMOO && BOOST_PERIPHERALS
+
+config DDR2_SDRAM_FREQ
+        int "DDR2 SDRAM Frequency"
+        default 300000
+
+config STOCK_VOLTAGE
+        bool "stock voltage values"
+        depends on ARCH_TEGRA_2x_SOC
+        default n
+
+config OC_1300
+        bool "Limit max OC at 1300"
+        depends on ARCH_TEGRA_2x_SOC && !STOCK_VOLTAGE
+        default n
+
+endif
+
+config PM_DEEPSLEEP
+        bool "instant on feature"
+        default n
+        help
+          after enabling this feature, when PM state is set to DEEPSLEEP, the kerne
+          ignore all key press except long press power key.
+

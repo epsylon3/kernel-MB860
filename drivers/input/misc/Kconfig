@@ -499,4 +499,46 @@ config INPUT_ALPS_GPIO_SCROLLWHEEL
 	  To compile this driver as a module, choose M here: the
 	  module will be called alps_gpio_scrollwheel.
 
+config INPUT_PCAP
+        tristate "Motorola EZX PCAP misc input events"
+        depends on EZX_PCAP
+        help
+          Say Y here if you want to use Power key and Headphone button
+          on Motorola EZX phones.
+
+          To compile this driver as a module, choose M here: the
+          module will be called pcap_keys.
+
+config INPUT_TEGRA_ODM_ACCEL
+        boolean "Accelerometer for NVIDIA Tegra ODM kit"
+        depends on ARCH_TEGRA && TEGRA_ODM_KIT
+        help
+          Say Y here if you want to enable an accelerometer input device node
+          using the NVIDIA Tegra ODM kit accelerometer adaptation interface
+
+config INPUT_TEGRA_ODM_SCROLL
+        tristate "Scrollwheel for NVIDIA Tegra ODM kit"
+        depends on ARCH_TEGRA && TEGRA_ODM_KIT
+        help
+          Say Y here if you want to enable a scrollwheel input device node
+          using the NVIDIA Tegra ODM kit scrollwheel adaptation interface
+
 endif
+
+config INPUT_ALS_IR_ISL29030
+        tristate "ISL29030 ALS & IR Sensor"
+        default y
+        help
+          Say Y here if you wish to include support for the ISL29030 ALS
+          and IR sensor.
+
+          If unsure, say N.
+
+config INPUT_HALLEFFECT_BU52014HV
+        tristate "BU52014HV Hall Effect Sensor"
+        help
+                Say Y here if you wish to include support for the BU52014HV hall
+                effect sensor.
+
+                If unsure, say N.
+

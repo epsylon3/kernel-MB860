@@ -48,6 +48,10 @@
 #include <asm/traps.h>
 #include <asm/unwind.h>
 
+#ifdef CONFIG_BOOTINFO
+#include <asm/bootinfo.h>
+#endif
+
 #if defined(CONFIG_DEPRECATED_PARAM_STRUCT)
 #include "compat.h"
 #endif
@@ -670,17 +674,52 @@ static int __init parse_tag_revision(const struct tag *tag)
 
 __tagtable(ATAG_REVISION, parse_tag_revision);
 
+#ifdef CONFIG_CMDLINE_PREPEND_ATRIX
+static char __initdata cmdline_buffer[COMMAND_LINE_SIZE] = "\0";
+#endif
+
 static int __init parse_tag_cmdline(const struct tag *tag)
 {
-#ifndef CONFIG_CMDLINE_FORCE
+#ifdef CONFIG_CMDLINE_PREPEND_ATRIX
+	char *tmp_cmdline = (char *) tag->u.cmdline.cmdline;
+	char *cmdline_tok = strsep(&tmp_cmdline," ");
+	const char excl1[] = "vmalloc=", excl2[] = "nvmem=", excl3[] = "mem=";
+
+	while ((cmdline_tok = strsep(&tmp_cmdline," ")) != NULL)
+	{   /* only copy if not a mem related part of cmdline */
+        	if ((0 != strncmp(cmdline_tok, excl1, sizeof(&excl1))) &&
+        	    (0 != strncmp(cmdline_tok, excl2, sizeof(&excl2))) &&
+        	    (0 != strncmp(cmdline_tok, excl3, sizeof(&excl3))))
+        	{
+                	strlcat(cmdline_buffer,cmdline_tok,COMMAND_LINE_SIZE);
+                	strlcat(cmdline_buffer," ",COMMAND_LINE_SIZE);
+        	}
+	}
+
+	/* add prepend from .config */
+	strlcat(default_command_line, " ", COMMAND_LINE_SIZE);
+	strlcat(default_command_line, cmdline_buffer, COMMAND_LINE_SIZE);
+#elif defined(CONFIG_CMDLINE_FORCE)
 	strlcpy(default_command_line, tag->u.cmdline.cmdline, COMMAND_LINE_SIZE);
-#else
 	pr_warning("Ignoring tag cmdline (using the default kernel command line)\n");
 #endif /* CONFIG_CMDLINE_FORCE */
 	return 0;
 }
 
 __tagtable(ATAG_CMDLINE, parse_tag_cmdline);
+
+#ifdef CONFIG_BOOTINFO
+static int __init parse_tag_powerup_reason(const struct tag *tag)
+{
+i	bi_set_powerup_reason(tag->u.powerup_reason.powerup_reason);
+	printk(KERN_INFO "%s: powerup reason=0x%08x\n",
+		__func__, bi_powerup_reason());
+	return 0;
+}
+
+__tagtable(ATAG_POWERUP_REASON, parse_tag_powerup_reason);
+#endif /* CONFIG_BOOTINFO */
+
 
 /*
  * Scan the tag table for this tag, and call its parse function.
@@ -946,6 +985,10 @@ static const char *hwcap_str[] = {
 	"neon",
 	"vfpv3",
 	"vfpv3d16",
+	"tls",
+	"vfpv4",
+	"idiva",
+	"idivt",
 	NULL
 };
 

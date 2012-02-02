@@ -38,3 +38,11 @@ obj-$(CONFIG_CHARGER_ISP1704)	+= isp1704_charger.o
 obj-$(CONFIG_CHARGER_TWL4030)	+= twl4030_charger.o
 obj-$(CONFIG_CHARGER_GPIO)	+= gpio-charger.o
 obj-$(CONFIG_MAX8907C_CHARGER)	+= max8907c-charger.o
+
+obj-$(CONFIG_CHARGER_CPCAP)    += cpcap-charger.o
+obj-$(CONFIG_CHARGER_CPCAP)    += cpcap-usb-charger.o
+obj-$(CONFIG_CHARGER_CPCAP)    += cpcap-factory.o
+obj-$(CONFIG_BATTERY_CPCAP)    += cpcap-battery.o
+#obj-$(CONFIG_TEGRA_BATTERY_ODM)  += tegra_odm_battery.o
+#obj-$(CONFIG_TEGRA_BATTERY_NVEC) += nvec_battery.o
+

@@ -37,6 +37,14 @@ config ARM
 	  Europe.  There is an ARM Linux project with a web page at
 	  <http://www.arm.linux.org.uk/>.
 
+config BOOTINFO
+	bool "Boot Information Feature"
+	default n
+	help
+	  This feature provides access to certain boot information
+	  from both kernel context (via function call)
+	  and user context (via /proc/bootinfo).
+
 config HAVE_PWM
 	bool
 

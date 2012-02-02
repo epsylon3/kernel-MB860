@@ -48,3 +48,8 @@ obj-$(CONFIG_INPUT_WM831X_ON)		+= wm831x-on.o
 obj-$(CONFIG_INPUT_XEN_KBDDEV_FRONTEND)	+= xen-kbdfront.o
 obj-$(CONFIG_INPUT_YEALINK)		+= yealink.o
 
+obj-$(CONFIG_INPUT_ALS_IR_ISL29030)    += isl29030.o
+obj-$(CONFIG_INPUT_TEGRA_ODM_ACCEL)    += tegra_odm_accel.o
+obj-$(CONFIG_INPUT_TEGRA_ODM_SCROLL)   += tegra_odm_scroll.o
+obj-$(CONFIG_INPUT_HALLEFFECT_BU52014HV) += bu52014hfv.o
+

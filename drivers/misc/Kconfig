@@ -562,4 +562,43 @@ source "drivers/misc/ti-st/Kconfig"
 source "drivers/misc/lis3lv02d/Kconfig"
 source "drivers/misc/mpu3050/Kconfig"
 
+# Moto stuff
+
+source "drivers/misc/radio_ctrl/Kconfig"
+source "drivers/misc/sec/Kconfig"
+
+config APANIC_MMC
+	bool "Android kernel panic diagnostics driver"
+	default n
+
+config MDM_CTRL
+	bool "Modem control"
+	default n
+
+config VIB_GPIO
+	bool "GPIO Vibrator"
+	default n
+
+config VIB_PWM
+	bool "PWM Vibrator"
+	default n
+
+config SENSORS_KXTF9
+	tristate "KXTF9 Accelerometer"
+	default n
+	depends on I2C
+	help
+	  Say yes here if you wish to include the Kionix
+	  KXTF9 accelerometer driver.
+
+config MISC_NVODMCAM
+	tristate "Camera driver for use with nVidia ODM subsystem"
+	depends on ARCH_TEGRA
+	---help---
+	  This is a custom driver to facilitate camera power control with nVidia ODM
+
+config MOT_TCMD_DRIVER
+	bool "Motorola tcmd driver"
+	default n
+
 endif # MISC_DEVICES
