@@ -586,9 +586,10 @@ static void __init tegra_setup_hsuart(void)
 		struct tegra_serial_platform_data *plat;
 		char name[16];
 
+#ifndef CONFIG_MOT_SERIAL_JACK
 		if (i==dbg_id)
 			continue;
-
+#endif
 		plat = &tegra_uart_platform[i];
 
 		snprintf(name, sizeof(name), "%s.%d",
