@@ -116,8 +116,8 @@ static bool tx_log_enable = false;
 #define UART_TRACE_LEVEL_ISR		4
 #define UART_TRACE_LEVEL_REGS		8
 
-static unsigned int uart_debug = 0;
-static unsigned int uart_line = 0; // Bit mask of interfaces to print
+static unsigned int uart_debug = 1;
+static unsigned int uart_line = 0b10011; // Bit mask of interfaces to print, bit 2: bluetooth, bit 3: gsm
 
 MODULE_PARM_DESC(debug, "Enable UART debug output");
 MODULE_PARM_DESC(uart_line, "Bit mask of UART interfaces to debug");
