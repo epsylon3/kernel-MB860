@@ -116,9 +116,9 @@ static int tegra_kbc_resume(struct platform_device *pdev)
 		tegra_kbc_setup_wakekeys(kbc, false);
 		tegra_configure_dpd_kbc(0, 0);
 	} else if (kbc->idev->users) {
-     		 printk("tegra_kbc : reopen kbc in resume");
-       		tegra_kbc_open(kbc->idev);
-        }
+		printk("tegra-kbc: reopen kbc in resume");
+		tegra_kbc_open(kbc->idev);
+	}
 	return 0;
 }
 #endif
@@ -482,7 +482,11 @@ static int __init tegra_kbc_probe(struct platform_device *pdev)
 	kbc->repoll_time = 5 + (16+pdata->debounce_cnt)*nr + pdata->repeat_cnt;
 	kbc->repoll_time = (kbc->repoll_time + 31) / 32;
 
-	kbc->idev->evbit[0] = BIT_MASK(EV_KEY);
+	printk(KERN_INFO "tegra-kbc: debounce=0x%x, repoll_time=0x%x",
+	                             pdata->debounce_cnt, kbc->repoll_time);
+
+	kbc->idev->evbit[0] = BIT_MASK(EV_KEY) | BIT_MASK(EV_REP);
+	input_set_capability(kbc->idev, EV_MSC, MSC_SCAN);
 
 	for (i=0; i<KBC_MAX_COL; i++) {
 		if (!cols[i]) continue;
