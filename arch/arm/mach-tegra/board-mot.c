@@ -676,7 +676,9 @@ static void __init tegra_mot_init(void)
 		tegra_uart_platform[UART_IPC_OLYMPUS].uart_ipc = 1;
 		tegra_uart_platform[UART_IPC_OLYMPUS].uart_wake_host = TEGRA_GPIO_PA0;
 		tegra_uart_platform[UART_IPC_OLYMPUS].uart_wake_request = TEGRA_GPIO_PF1;
+		#ifdef CONFIG_CONFIG_MDM_CTRL
 		tegra_uart_platform[UART_IPC_OLYMPUS].peer_register = mot_mdm_ctrl_peer_register;
+		#endif
 	}
 	else if(machine_is_etna()) {
 		if (HWREV_TYPE_IS_BRASSBOARD(system_rev)) {
@@ -687,20 +689,26 @@ static void __init tegra_mot_init(void)
 			tegra_uart_platform[UART_IPC_ETNA].uart_ipc = 1;
 			tegra_uart_platform[UART_IPC_ETNA].uart_wake_host = TEGRA_GPIO_PA0;
 			tegra_uart_platform[UART_IPC_ETNA].uart_wake_request = TEGRA_GPIO_PF1;
+			#ifdef CONFIG_CONFIG_MDM_CTRL
 			tegra_uart_platform[UART_IPC_ETNA].peer_register = mot_mdm_ctrl_peer_register;
+			#endif
 		}
 	}
 	else if(machine_is_tegra_daytona()) {
 		tegra_uart_platform[UART_IPC_DAYTONA].uart_ipc = 1;
 		tegra_uart_platform[UART_IPC_DAYTONA].uart_wake_host = TEGRA_GPIO_PA0;
 		tegra_uart_platform[UART_IPC_DAYTONA].uart_wake_request = TEGRA_GPIO_PF1;
+		#ifdef CONFIG_CONFIG_MDM_CTRL
 		tegra_uart_platform[UART_IPC_DAYTONA].peer_register = mot_mdm_ctrl_peer_register;
+		#endif
 	}
 	else if(machine_is_sunfire()) {
 		tegra_uart_platform[UART_IPC_SUNFIRE].uart_ipc = 1;
 		tegra_uart_platform[UART_IPC_SUNFIRE].uart_wake_host = TEGRA_GPIO_PA0;
 		tegra_uart_platform[UART_IPC_SUNFIRE].uart_wake_request = TEGRA_GPIO_PF1;
+		#ifdef CONFIG_CONFIG_MDM_CTRL
 		tegra_uart_platform[UART_IPC_SUNFIRE].peer_register = mot_mdm_ctrl_peer_register;
+		#endif
 	}
 
 	if( (bi_powerup_reason() & PWRUP_FACTORY_CABLE) &&
