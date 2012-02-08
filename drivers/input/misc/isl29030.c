@@ -734,7 +734,7 @@ static int isl29030_misc_ioctl(struct inode *inode, struct file *file,
 static const struct file_operations isl29030_misc_fops = {
 	.owner = THIS_MODULE,
 	.open = isl29030_misc_open,
-	.ioctl = isl29030_misc_ioctl,
+	.unlocked_ioctl = isl29030_misc_ioctl,
 };
 
 static struct miscdevice isl29030_misc_device = {
@@ -1034,8 +1034,11 @@ static int ld_isl29030_remove(struct i2c_client *client)
 		isl->pdata->power_off();
 	if (isl->pdata->exit)
 		isl->pdata->exit();
-
+#ifdef USE_DYNAMIC_MEMORY_ALLOCATION
 	kfree(isl);
+#else
+	isl = NULL;
+#endif
 	return 0;
 }
 

@@ -7,6 +7,7 @@
 #include <linux/platform_device.h>
 #include <linux/major.h>
 #include <linux/tcmd_driver.h>
+#include <linux/mtd/partitions.h>
 
 #include <asm/mach-types.h>
 #include <asm/mach/arch.h>

@@ -84,6 +84,10 @@ struct usb_mass_storage_platform_data {
 
 	/* number of LUNS */
 	int nluns;
+
+#ifdef CONFIG_MACH_MOT
+	size_t bulk_size;
+#endif
 };
 
 /* Platform data for USB ethernet driver. */
@@ -96,7 +100,12 @@ struct usb_ether_platform_data {
 /* Platform data for ACM driver. */
 struct acm_platform_data {
 	u8	num_inst;
+#ifdef CONFIG_MACH_MOT
+	u8      use_iads;
+#endif
 };
+
+extern void android_usb_set_connected(int on, unsigned int accy);
 
 extern void android_register_function(struct android_usb_function *f);
 

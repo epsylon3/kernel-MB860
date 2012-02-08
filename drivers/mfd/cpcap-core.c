@@ -47,7 +47,7 @@ static int cpcap_resume(struct spi_device *spi);
 
 const static struct file_operations cpcap_fops = {
 	.owner = THIS_MODULE,
-	.ioctl = ioctl,
+	.unlocked_ioctl = ioctl,
 };
 
 static struct miscdevice cpcap_dev = {

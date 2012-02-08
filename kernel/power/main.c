@@ -132,6 +132,18 @@ power_attr(pm_test);
 
 #endif /* CONFIG_PM_SLEEP */
 
+#ifdef CONFIG_PM_DEEPSLEEP
+static int pm_deepsleep_enabled;
+
+int get_deepsleep_mode(void)
+{
+	return pm_deepsleep_enabled;
+}
+EXPORT_SYMBOL(get_deepsleep_mode);
+
+power_attr(active_wake_lock);
+#endif
+
 struct kobject *power_kobj;
 
 /**
@@ -329,6 +341,9 @@ static struct attribute * g[] = {
 	&wake_lock_attr.attr,
 	&wake_unlock_attr.attr,
 #endif
+#ifdef CONFIG_PM_DEEPSLEEP
+	&active_wake_lock_attr.attr,
+#endif
 #endif
 	NULL,
 };
@@ -356,6 +371,9 @@ static int __init pm_init(void)
 	int error = pm_start_workqueue();
 	if (error)
 		return error;
+#ifdef CONFIG_PM_DEEPSLEEP
+	pm_deepsleep_enabled = 0;
+#endif
 	hibernate_image_size_init();
 	power_kobj = kobject_create_and_add("power", NULL);
 	if (!power_kobj)

@@ -6,7 +6,7 @@
 #include <linux/i2c.h>
 #include <linux/spi/spi.h>
 #include <linux/bu52014hfv.h>
-#include <linux/i2c/akm8975.h>
+#include <linux/akm8975.h>
 #include <linux/isl29030.h>
 #include <linux/kxtf9.h>
 #include <linux/delay.h>

@@ -319,8 +319,8 @@ static int __init mot_setup_mdm6600_usb_ipc(int irq)
 	if (irq) {
 		gpio_request(irq, "mdm6600_usb_wakeup");
 		gpio_direction_input(irq);
-		mdm6600_resources[0].start = GPIO_TO_IRQ(irq);
-		mdm6600_resources[0].end = GPIO_TO_IRQ(irq);
+		mdm6600_resources[0].start = TEGRA_GPIO_TO_IRQ(irq);
+		mdm6600_resources[0].end = TEGRA_GPIO_TO_IRQ(irq);
 	}
 	return platform_device_register(&mdm6600_usb_platform_device);
 }
@@ -354,7 +354,8 @@ static void __init mot_setup_wrigley_host_wake(void)
 	printk(KERN_INFO "%s: irq: %d, value: %d\n", __func__, irq,
 				gpio_get_value(WRIGLEY_HOST_WAKE_GPIO));
 
-	set_irq_type(irq, IRQ_TYPE_EDGE_FALLING);
+	//set_irq_type(irq, IRQ_TYPE_EDGE_FALLING);
+	irq_set_irq_type(irq, IRQ_TYPE_EDGE_FALLING);
 	err = request_irq(irq, wrigley_host_wake_irq_handler,
 			IRQF_DISABLED, "wan_wake_host", NULL);
 	if (err < 0) {

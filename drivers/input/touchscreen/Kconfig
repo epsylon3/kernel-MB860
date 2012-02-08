@@ -11,6 +11,20 @@ menuconfig INPUT_TOUCHSCREEN
 
 if INPUT_TOUCHSCREEN
 
+config TOUCHSCREEN_XMEGAT
+	tristate "Atmel xMegaT Touchscreen (qtouch)"
+	depends on I2C
+
+config XMEGAT_USE_RESET_TO_RESUME
+	bool
+	depends on TOUCHSCREEN_XMEGAT
+	default y
+
+config XMEGAT_DO_HARD_RESET
+	bool
+	depends on XMEGAT_USE_RESET_TO_RESUME
+	default y
+
 config TOUCHSCREEN_88PM860X
 	tristate "Marvell 88PM860x touchscreen"
 	depends on MFD_88PM860X
@@ -747,5 +761,13 @@ config TOUCHSCREEN_TPS6507X
 
 	  To compile this driver as a module, choose M here: the
 	  module will be called tps6507x_ts.
+
+config TOUCHSCREEN_TEGRA_ODM
+	boolean "NVIDIA Tegra ODM-kit based touchscreen driver"
+	depends on ARCH_TEGRA && TEGRA_NVRM
+	default n
+	help
+	  Adds a touchscreen input device for drivers written using NVIDIA's
+	  Tegra ODM kit interface
 
 endif

@@ -188,8 +188,8 @@ static void *mot_wifi_mem_prealloc(int section, unsigned long size)
 static struct resource mot_wifi_resources[] = {
 	[0] = {
 		.name	= "bcm4329_wlan_irq",
-		.start	= GPIO_TO_IRQ(WLAN_IRQ_GPIO),
-		.end	= GPIO_TO_IRQ(WLAN_IRQ_GPIO),
+		.start	= TEGRA_GPIO_TO_IRQ(WLAN_IRQ_GPIO),
+		.end	= TEGRA_GPIO_TO_IRQ(WLAN_IRQ_GPIO),
 		.flags	= IORESOURCE_IRQ | IORESOURCE_IRQ_LOWLEVEL
 			| IORESOURCE_IRQ_SHAREABLE,
 	},

@@ -74,3 +74,7 @@ obj-$(CONFIG_USB_ANDROID_MASS_STORAGE)	+= f_mass_storage.o
 obj-$(CONFIG_USB_ANDROID_MTP)	+= f_mtp.o
 obj-$(CONFIG_USB_ANDROID_RNDIS)	+= f_rndis.o u_ether.o
 obj-$(CONFIG_USB_ANDROID_ACCESSORY)	+= f_accessory.o
+
+g_mot_android-objs := mot_android.o f_usbnet.o f_adb.o f_mass_storage.o f_acm.o u_serial.o f_rndis.o u_ether.o
+obj-$(CONFIG_USB_MOT_ANDROID)  += g_mot_android.o
+
