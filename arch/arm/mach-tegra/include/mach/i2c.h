@@ -1,7 +1,7 @@
 /*
- * arch/arm/mach-tegra/include/mach/spi.h
+ * arch/arm/mach-tegra/include/mach/i2c.h
  *
- * Copyright (c) 2010, NVIDIA Corporation.
+ * Copyright (c) 2009-2010, NVIDIA Corporation.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,25 +18,20 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef __MACH_TEGRA_SPI_H
-#define __MACH_TEGRA_SPI_H
+#ifndef __MACH_TEGRA_I2C_H
+#define __MACH_TEGRA_I2C_H
 
-#include <linux/types.h>
-#include <linux/spi/spi.h>
+#include <mach/pinmux.h>
 
-typedef int	(*callback)(void *client_data);
+#define TEGRA_I2C_MAX_BUS 2
 
-/**
- * register_spi_slave_callback - registers notification callback provided by
- * the client.
- * This callback indicate that the controller is all set to receive/transfer
- * data.
- * @spi: struct spi_device - refer to linux/spi/spi.h
- * @func: Callback function
- * @client_data: Data to be passed in callback
- * Context: can not sleep
- */
-int spi_tegra_register_callback(struct spi_device *spi, callback func,
-	void *client_data);
+struct tegra_i2c_plat_parms {
+	int adapter_nr;
+	int bus_count;
+	unsigned int bus_mux[TEGRA_I2C_MAX_BUS];
+	unsigned long bus_clk[TEGRA_I2C_MAX_BUS];
+	int bus_mux_len[TEGRA_I2C_MAX_BUS];
+	bool is_dvc;
+};
 
 #endif
