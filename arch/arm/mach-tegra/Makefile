@@ -193,4 +193,31 @@ obj-${CONFIG_MACH_ADAM}              += board-adam-pm-gsm.o
 #obj-${CONFIG_MACH_ADAM}              += board-adam-pm-wlan.o
 
 obj-$(CONFIG_MACH_MOT)                  += board-mot.o board-mot-power.o board-mot-lights.o board-mot-touch.o board-mot-sensors.o board-mot-misc.o board-mot-modem.o board-mot-wlan.o board-mot-usb.o board-mot-camera.o
+obj-$(CONFIG_INPUT_MOT_WEBTOP)          += aev.o evfwd.o
+
+
+ccflags-$(CONFIG_TEGRA_NVOS)           += -DNV_DEBUG=0
+ccflags-$(CONFIG_TEGRA_NVOS)           += -DNV_OAL=0
+ccflags-$(CONFIG_TEGRA_NVOS)           += -DNV_IS_AVP=0
+ccflags-$(CONFIG_TEGRA_NVOS)           += -DNV_USE_FUSE_CLOCK_ENABLE=0
+obj-$(CONFIG_TEGRA_NVOS)               += nvos_user.o
+obj-$(CONFIG_TEGRA_NVOS)               += nvos/
+
+obj-$(CONFIG_TEGRA_NVRM)               += board-nvodm.o
+obj-$(CONFIG_TEGRA_NVRM)               += nvrm/
+obj-$(CONFIG_TEGRA_NVRM)               += nvodm/
+obj-$(CONFIG_TEGRA_NVRM)               += odm_kit/
+obj-$(CONFIG_TEGRA_NVRM)               += nvreftrack/
+obj-$(CONFIG_TEGRA_NVRM)               += nvrm_user.o
+obj-$(CONFIG_TEGRA_NVRM)               += clock_nvrm.o
+obj-$(CONFIG_TEGRA_NVRM)               += nvrpc_user.o
+obj-$(CONFIG_TEGRA_NVRM)               += tegra_exports.o
+obj-y                                  += nvddk/
+
+obj-$(CONFIG_TEGRA_NVEC)               += nvec_user.o
+obj-$(CONFIG_TEGRA_NVEC)               += nvec/
+
+obj-$(CONFIG_TEGRA_FUSE)               += sysfs-fuse.o
+obj-$(CONFIG_TEGRA_ODM_VIBRATE)        += vibrate.o
+obj-$(CONFIG_TEGRA_AES_USER)           += nvaes_user.o
 

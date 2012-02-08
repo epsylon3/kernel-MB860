@@ -396,6 +396,30 @@ if TEGRA_ODM_KIT
 source "arch/arm/mach-tegra/odm_kit/Kconfig"
 endif
 
+config TEGRA_NVRM
+	bool
+	default n
+
+config TEGRA_NVOS
+	bool
+        default n
+
+config TEGRA_NVEC
+	bool
+	default n
+
+config TEGRA_AES_USER
+	bool
+	default n
+
+config TEGRA_FUSE
+	bool
+	default n
+
+config TEGRA_ODM_VIBRATE
+	bool
+	default n
+
 config MACH_MOT
 	bool "Motorola AP20 Products"
 	default n
