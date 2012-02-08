@@ -80,7 +80,21 @@ struct tegra_kbc {
 	struct clk *clk;
 };
 
-static const u32 tegra_kbc_default_keymap[] = {
+/* olympus */
+#ifdef CONFIG_MACH_MOT
+static const u32 tegra_kbc_default_keymap[] __devinitdata = {
+	KEY(0, 0, KEY_VOLUMEUP),
+	KEY(0, 1, KEY_HP), //211   - CAMERA  FOCUS
+	KEY(0, 2, KEY_MENU),
+	KEY(1, 0, KEY_VOLUMEDOWN),
+	KEY(1, 1, KEY_CAMERA),
+	KEY(1, 2, KEY_HOME),
+	KEY(2, 0, KEY_SCREENLOCK),
+	KEY(2, 1, KEY_SEARCH),
+	KEY(2, 2, KEY_BACK),
+};
+#else
+static const u32 tegra_kbc_default_keymap[] __devinitdata = {
 	KEY(0, 2, KEY_W),
 	KEY(0, 3, KEY_S),
 	KEY(0, 4, KEY_A),
@@ -214,6 +228,7 @@ static const u32 tegra_kbc_default_keymap[] = {
 
 	KEY(31, 4, KEY_HELP),
 };
+#endif
 
 static const struct matrix_keymap_data tegra_kbc_default_keymap_data = {
 	.keymap		= tegra_kbc_default_keymap,

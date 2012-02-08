@@ -43,8 +43,8 @@
 #include <mach/regulator.h>
 #include <mach/kbc.h>
 #include <mach/i2c.h>
-#include <mach/spi.h>
-#include <mach/w1.h>
+#include <linux/spi-tegra.h>
+#include <linux/w1-gpio.h>
 
 #include <mach/nvrm_linux.h>
 
@@ -798,8 +798,13 @@ static inline void tegra_setup_hcd(void) { }
 #endif
 
 #ifdef CONFIG_KEYBOARD_TEGRA
-struct tegra_kbc_plat tegra_kbc_platform;
 
+# ifndef CONFIG_KEYBOARD_TEGRA_ODM
+struct tegra_kbc_platform_data tegra_kbc_platform;
+static void tegra_setup_kbc(void) { }
+# else
+
+struct tegra_kbc_plat tegra_kbc_platform;
 static noinline void __init tegra_setup_kbc(void)
 {
 	struct tegra_kbc_plat *pdata = &tegra_kbc_platform;
@@ -900,6 +905,7 @@ static noinline void __init tegra_setup_kbc(void)
 		}
 	}
 }
+# endif
 #else
 static void tegra_setup_kbc(void) { }
 #endif

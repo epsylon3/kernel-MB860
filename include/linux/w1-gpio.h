@@ -21,4 +21,10 @@ struct w1_gpio_platform_data {
 	void (*enable_external_pullup)(int enable);
 };
 
+#ifdef CONFIG_MACH_MOT
+struct tegra_w1_platform_data {
+	unsigned int pinmux;
+};
+#endif
+
 #endif /* _LINUX_W1_GPIO_H */

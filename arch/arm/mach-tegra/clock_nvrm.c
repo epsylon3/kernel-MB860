@@ -192,10 +192,10 @@ static int tegra_periph_clk_set_rate(struct clk *c, unsigned long rate)
 		NvRmFreqKHz temp = freq * c->rate_tolerance / 100;
 		min = freq - temp;
 		max = freq + temp;
-	} else if (c->rate_min) {
+	} else if (c->min_rate) {
 		max = NvRmFreqMaximum;
-		min = c->rate_min;
-		freq = max_t(NvRmFreqKHz, c->rate_min, freq);
+		min = c->min_rate;
+		freq = max_t(NvRmFreqKHz, c->min_rate, freq);
 	} else {
 		/* If no tolerance, and no low limit - let RM find the
 		   best approximation to the target */
@@ -294,7 +294,7 @@ static struct clk_ops dfs_clk_ops = {
 		},							\
 		.module = NVRM_MODULE_ID(NvRmModuleID_##_modname, _instance), \
 		.ops = &tegra_periph_clk_ops,				\
-		.rate_min = _min,					\
+		.min_rate = _min,					\
 		.rate_tolerance = _tol,					\
 		.power = _pow,						\
 		.flags = _flags,					\

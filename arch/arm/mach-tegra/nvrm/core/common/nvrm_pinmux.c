@@ -43,6 +43,9 @@
 #include <mach/pinmux.h>
 #include "../../../gpio-names.h"
 
+typedef enum tegra_tristate tegra_tristate_t;
+typedef enum tegra_pingroup tegra_pingroup_t;
+
 /*  Each of the pin mux configurations defined in the pin mux spreadsheet are
  *  stored in chip-specific tables.  For each configuration, every pad group
  *  that must be programmed is stored as a single 32b entry, where the register

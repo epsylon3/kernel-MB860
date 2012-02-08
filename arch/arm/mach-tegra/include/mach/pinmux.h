@@ -345,11 +345,15 @@ void tegra_drive_pinmux_config_table(struct tegra_drive_pingroup_config *config,
 void tegra_pinmux_set_safe_pinmux_table(const struct tegra_pingroup_config *config,
 	int len);
 void tegra_pinmux_config_pinmux_table(const struct tegra_pingroup_config *config,
-	int len);
+	int len, bool is_set);
 void tegra_pinmux_config_tristate_table(const struct tegra_pingroup_config *config,
 	int len, enum tegra_tristate tristate);
 void tegra_pinmux_config_pullupdown_table(const struct tegra_pingroup_config *config,
 	int len, enum tegra_pullupdown pupd);
 
-void __init tegra_init_pinmux(void);
+int tegra_pinmux_get_vddio(enum tegra_pingroup pg);
+void tegra_pinmux_set_vddio_tristate(enum tegra_vddio vddio, enum tegra_tristate tristate);
+void tegra_pinmux_init_pingroups(void);
+
+void tegra_init_pinmux(void);
 #endif

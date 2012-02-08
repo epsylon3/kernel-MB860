@@ -704,7 +704,7 @@ static int tegra_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[],
 		tegra_pinmux_set_safe_pinmux_table(i2c_dev->last_mux,
 			i2c_dev->last_mux_len);
 		tegra_pinmux_config_pinmux_table(i2c_bus->mux,
-			i2c_bus->mux_len);
+			i2c_bus->mux_len, true);
 		i2c_dev->last_mux = i2c_bus->mux;
 		i2c_dev->last_mux_len = i2c_bus->mux_len;
 	}

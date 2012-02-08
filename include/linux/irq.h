@@ -171,7 +171,25 @@ enum {
 	IRQD_IRQ_DISABLED		= (1 << 16),
 	IRQD_IRQ_MASKED			= (1 << 17),
 	IRQD_IRQ_INPROGRESS		= (1 << 18),
+#ifdef CONFIG_MACH_MOT
+	IRQD_SUSPENDED			= (1 << 19),
+	IRQD_ONESHOT			= (1 << 20),
+	IRQD_SPURIOUS_DISABLED		= (1 << 21),
+	IRQD_MOVE_PENDING		= (1 << 22),
+#endif
 };
+
+#ifdef CONFIG_MACH_MOT
+static inline u32 irqd_is_suspended(struct irq_data *d)
+{
+        return d->state_use_accessors & IRQD_SUSPENDED;
+}
+
+static inline u32 irqd_move_pending(struct irq_data *d)
+{
+        return d->state_use_accessors & IRQD_MOVE_PENDING;
+}
+#endif
 
 static inline bool irqd_is_setaffinity_pending(struct irq_data *d)
 {

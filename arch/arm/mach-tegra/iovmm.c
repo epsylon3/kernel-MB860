@@ -878,7 +878,7 @@ int tegra_iovmm_unregister(struct tegra_iovmm_device *dev)
 	return 0;
 }
 
-static int tegra_iovmm_suspend(void)
+int tegra_iovmm_suspend(void)
 {
 	int rc = 0;
 	struct tegra_iovmm_device *dev;
@@ -899,7 +899,7 @@ static int tegra_iovmm_suspend(void)
 	return 0;
 }
 
-static void tegra_iovmm_resume(void)
+void tegra_iovmm_resume(void)
 {
 	struct tegra_iovmm_device *dev;
 	unsigned long flags;

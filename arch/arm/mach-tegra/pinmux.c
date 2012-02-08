@@ -372,6 +372,87 @@ static int tegra_pinmux_set_func(const struct tegra_pingroup_config *config)
 	return 0;
 }
 
+static int tegra_pinmux_cancel_func(const struct tegra_pingroup_config *config)
+{
+        int mux = -1;
+        int i;
+        int find = 0;
+        unsigned long reg;
+        unsigned long flags;
+        enum tegra_pingroup pg = config->pingroup;
+        enum tegra_mux_func func = config->func;
+
+        if (pg < 0 || pg >=  TEGRA_MAX_PINGROUP)
+                return -ERANGE;
+
+        if (pingroups[pg].mux_reg <= 0)
+                return -EINVAL;
+
+        if (func == TEGRA_MUX_INVALID) {
+                pr_err("The pingroup %s is not recommended for option %s\n",
+                                pingroup_name(pg), func_name(func));
+                WARN_ON(1);
+                return -EINVAL;
+        }
+
+        if (func < 0)
+                return -ERANGE;
+
+        if (func == TEGRA_MUX_SAFE)
+                func = pingroups[pg].func_safe;
+
+        if (func & TEGRA_MUX_RSVD) {
+                for (i = 0; i < 4; i++) {
+                        if (pingroups[pg].funcs[i] & TEGRA_MUX_RSVD)
+                                mux = i;
+
+                        if (pingroups[pg].funcs[i] == func) {
+                                mux = i;
+                                find = 1;
+                                break;
+                        }
+                }
+        } else {
+                for (i = 0; i < 4; i++) {
+                        if (pingroups[pg].funcs[i] == func) {
+                                mux = i;
+                                find = 1;
+                                break;
+                        }
+                }
+        }
+
+        if (mux < 0) {
+                pr_err("The pingroup %s is not supported option %s\n",
+                        pingroup_name(pg), func_name(func));
+                WARN_ON(1);
+                return -EINVAL;
+        }
+
+        if (!find)
+                pr_warn("The pingroup %s was configured to %s instead of %s\n",
+                        pingroup_name(pg), func_name(pingroups[pg].funcs[mux]),
+                        func_name(func));
+
+        spin_lock_irqsave(&mux_lock, flags);
+
+        reg = pg_readl(pingroups[pg].mux_reg);
+	if (((reg >> pingroups[pg].mux_bit) & 0x3) == mux) {
+		reg &= ~(0x3 << pingroups[pg].mux_bit);
+		reg |= mux << pingroups[pg].mux_bit;
+#if defined(TEGRA_PINMUX_HAS_IO_DIRECTION)
+		reg &= ~(0x1 << 5);
+		reg |= ((config->io & 0x1) << 5);
+#endif
+		pg_writel(reg, pingroups[pg].mux_reg);
+	}
+
+        spin_unlock_irqrestore(&mux_lock, flags);
+
+        return 0;
+}
+
+
 int tegra_pinmux_get_func(enum tegra_pingroup pg)
 {
 	int mux = -1;
@@ -894,7 +975,7 @@ void tegra_pinmux_set_safe_pinmux_table(const struct tegra_pingroup_config *conf
 }
 
 void tegra_pinmux_config_pinmux_table(const struct tegra_pingroup_config *config,
-	int len)
+	int len, bool is_set)
 {
 	int i;
 
@@ -906,6 +987,8 @@ void tegra_pinmux_config_pinmux_table(const struct tegra_pingroup_config *config
 			continue;
 		}
 		err = tegra_pinmux_set_func(&config[i]);
+		if (!is_set)
+			err = tegra_pinmux_cancel_func(&config[i]);
 		if (err < 0)
 			pr_err("%s: tegra_pinmux_set_func returned %d setting "
 			       "%s to %s\n", __func__, err,

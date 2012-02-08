@@ -339,7 +339,7 @@ static void __init gic_dist_init(struct gic_chip_data *gic,
 	writel(1, base + GIC_DIST_CTRL);
 }
 
-static void __cpuinit gic_cpu_init(struct gic_chip_data *gic)
+void __cpuinit gic_cpu_init(struct gic_chip_data *gic)
 {
 	void __iomem *dist_base = gic->dist_base;
 	void __iomem *base = gic->cpu_base;
@@ -368,7 +368,7 @@ static void __cpuinit gic_cpu_init(struct gic_chip_data *gic)
  * this function, no interrupts will be delivered by the GIC, and another
  * platform-specific wakeup source must be enabled.
  */
-static void gic_dist_save(unsigned int gic_nr)
+void gic_dist_save(unsigned int gic_nr)
 {
 	unsigned int gic_irqs;
 	void __iomem *dist_base;
@@ -409,7 +409,7 @@ static void gic_dist_save(unsigned int gic_nr)
  * handled normally, but any edge interrupts that occured will not be seen by
  * the GIC and need to be handled by the platform-specific wakeup source.
  */
-static void gic_dist_restore(unsigned int gic_nr)
+void gic_dist_restore(unsigned int gic_nr)
 {
 	unsigned int gic_irqs;
 	unsigned int i;
@@ -444,6 +444,34 @@ static void gic_dist_restore(unsigned int gic_nr)
 
 	writel_relaxed(1, dist_base + GIC_DIST_CTRL);
 }
+
+#ifdef CONFIG_MACH_MOT
+void gic_dist_exit(unsigned int gic_nr)
+{
+	if (gic_nr >= MAX_GIC_NR)
+		BUG();
+	writel(0, gic_data[gic_nr].dist_base + GIC_DIST_CTRL);
+}
+
+void __cpuinit gic_mot_cpu_init(unsigned int gic_nr, void __iomem *base)
+{
+	if (gic_nr >= MAX_GIC_NR)
+		BUG();
+
+	gic_cpu_init(&gic_data[gic_nr]);
+
+	//gic_data[gic_nr].cpu_base = base;
+	//writel(0xf0, base + GIC_CPU_PRIMASK);
+	//writel(1, base + GIC_CPU_CTRL);
+}
+
+void gic_cpu_exit(unsigned int gic_nr)
+{
+	if (gic_nr >= MAX_GIC_NR)
+		BUG();
+	writel(0, gic_data[gic_nr].cpu_base + GIC_CPU_CTRL);
+}
+#endif
 
 static void gic_cpu_save(unsigned int gic_nr)
 {

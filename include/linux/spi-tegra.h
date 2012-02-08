@@ -36,6 +36,10 @@ struct tegra_spi_platform_data {
 	unsigned int max_rate;
 	struct spi_clk_parent *parent_clk_list;
 	int  parent_clk_count;
+#ifdef CONFIG_MACH_MOT
+	unsigned int pinmux;
+	bool is_slink;
+#endif
 };
 
 /* Controller data from device to pass some info like

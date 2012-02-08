@@ -398,7 +398,7 @@ endif
 
 config TEGRA_NVRM
 	bool
-	default n
+	default y
 
 config TEGRA_NVOS
 	bool
@@ -413,7 +413,7 @@ config TEGRA_AES_USER
 	default n
 
 config TEGRA_FUSE
-	bool
+	tristate
 	default n
 
 config TEGRA_ODM_VIBRATE

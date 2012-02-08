@@ -92,6 +92,9 @@ struct clk_ops {
 	int		(*clk_cfg_ex)(struct clk *, enum tegra_clk_ex_param, u32);
 	void		(*reset)(struct clk *, bool);
 	int		(*shared_bus_update)(struct clk *);
+#ifdef CONFIG_MACH_MOT
+	unsigned long   (*get_rate)(struct clk *);
+#endif
 };
 
 struct clk_stats {
@@ -121,7 +124,11 @@ struct clk {
 	struct list_head	node;		/* node for list of all clocks */
 	struct dvfs 		*dvfs;
 	struct clk_lookup	lookup;
-
+#ifdef CONFIG_TEGRA_NVRM
+	u32			module;
+	u8			rate_tolerance;
+	bool			power;
+#endif
 #ifdef CONFIG_DEBUG_FS
 	struct dentry		*dent;
 #endif

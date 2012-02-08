@@ -111,9 +111,20 @@ enum audio_codec_type get_audio_codec_type(void);
 
 /* Olympus */
 
+#ifdef CONFIG_MACH_MOT
+
 void __init tegra_mc_init(void);
 void __init tegra_common_init(void);
 void __init tegra_map_common_io(void);
+
+struct tegra_suspend_platform_data;
+void __init tegra_init_suspend(struct tegra_suspend_platform_data *plat);
+
+#ifdef CONFIG_CPU_IDLE
+void __init tegra_init_idle(struct tegra_suspend_platform_data *plat);
+#else
+#define tegra_init_idle(plat) (0)
+#endif
 
 #ifdef CONFIG_CPU_FREQ
 int tegra_start_dvfsd(void);
@@ -126,4 +137,6 @@ bool tegra_chip_compare(u32 chip, u32 major_rev, u32 minor_rev);
 #define tegra_is_ap20_a03() tegra_chip_compare(0x20, 0x1, 0x3)
 bool tegra_is_ap20_a03p(void);
 
-#endif
+#endif //CONFIG_MACH_MOT
+
+#endif //__MACH_TEGRA_BOARD_H

@@ -41,6 +41,12 @@ void gic_secondary_init(unsigned int);
 void gic_cascade_irq(unsigned int gic_nr, unsigned int irq);
 void gic_raise_softirq(const struct cpumask *mask, unsigned int irq);
 void gic_enable_ppi(unsigned int);
+
+/* from moto 2.6.32 */
+void gic_mot_cpu_init(unsigned int gic_nr, void __iomem *base);
+void gic_cpu_exit(unsigned int gic_nr);
+void gic_dist_restore(unsigned int gic_nr);
+void gic_dist_exit(unsigned int gic_nr);
 #endif
 
 #endif
