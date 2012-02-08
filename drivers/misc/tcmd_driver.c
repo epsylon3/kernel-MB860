@@ -95,7 +95,7 @@ static int tcmd_misc_ioctl(struct inode *inode, struct file *file,
 static const struct file_operations tcmd_misc_fops = {
 	.owner = THIS_MODULE,
 	.open = tcmd_misc_open,
-	.ioctl = tcmd_misc_ioctl,
+	.unlocked_ioctl = tcmd_misc_ioctl,
 };
 
 static struct miscdevice tcmd_misc_device = {

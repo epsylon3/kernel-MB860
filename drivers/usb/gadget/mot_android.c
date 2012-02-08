@@ -250,7 +250,7 @@ struct android_dev {
 
 	int product_id;
 	int version;
-	struct switch_dev sdev;
+	struct switch_dev sw_connected;
 };
 
 static struct android_dev *_android_dev;
@@ -312,15 +312,15 @@ void android_usb_set_connected(int connected, unsigned int accy)
 	switch (accy) {
 	case CPCAP_ACCY_USB:
 		if (connected)
-			switch_set_state(&dev->sdev, CABLE_USB);
+			switch_set_state(&dev->sw_connected, CABLE_USB);
 		else
-			switch_set_state(&dev->sdev, CABLE_NONE);
+			switch_set_state(&dev->sw_connected, CABLE_NONE);
 		break;
 	case CPCAP_ACCY_FACTORY:
 		if (connected)
-			switch_set_state(&dev->sdev, CABLE_FACTORY);
+			switch_set_state(&dev->sw_connected, CABLE_FACTORY);
 		else
-			switch_set_state(&dev->sdev, CABLE_NONE);
+			switch_set_state(&dev->sw_connected, CABLE_NONE);
 		break;
 	default:
 		return;
@@ -423,7 +423,6 @@ static int android_setup_config(struct usb_configuration *c,
 
 static struct usb_configuration android_config_driver = {
 	.label = "android",
-	.bind = android_bind_config,
 	.setup = android_setup_config,
 	.bConfigurationValue = 1,
 	.bmAttributes = USB_CONFIG_ATT_ONE | USB_CONFIG_ATT_SELFPOWER,
@@ -666,7 +665,7 @@ static int __init android_bind(struct usb_composite_dev *cdev)
 	*/
 
 	/* register our configuration */
-	ret = usb_add_config(cdev, &android_config_driver);
+	ret = usb_add_config(cdev, &android_config_driver, android_bind_config);
 	if (ret) {
 		printk(KERN_ERR "usb_add_config failed\n");
 		return ret;
@@ -1070,7 +1069,7 @@ device_mode_change_write(struct file *file, const char __user * buffer,
 		 * This is required to handle a few corner cases, where
 		 * enumeration has not completed, but the cable is yanked out
 		 */
-		switch_set_state(&_android_dev->cdev->sdev, 0);
+		switch_set_state(&_android_dev->cdev->sw_connected, 0);
 		printk(KERN_INFO "%s - Handled Detach\n", __func__);
 		return count;
 	}
@@ -1362,21 +1361,21 @@ static int __init init(void)
 	dev_mode_change->adb_mode_changed_flag = 0;
 	dev_mode_change->tethering_mode_changed_flag = 0;
 	atomic_set(&tethering_enable_excl, 0);
-	dev->sdev.name = "usb_connected";
-	ret = switch_dev_register(&dev->sdev);
+	dev->sw_connected.name = "usb_connected";
+	ret = switch_dev_register(&dev->sw_connected);
 	if (ret < 0)
 		return ret;
 
 	ret = platform_driver_register(&android_platform_driver);
 	if (ret) {
-		switch_dev_unregister(&dev->sdev);
+		switch_dev_unregister(&dev->sw_connected);
 		kfree(_android_dev);
 		kfree(_device_mode_change_dev);
 		return ret;
 	}
 	ret = misc_register(&mode_change_device);
 	if (ret) {
-		switch_dev_unregister(&dev->sdev);
+		switch_dev_unregister(&dev->sw_connected);
 		kfree(_android_dev);
 		kfree(_device_mode_change_dev);
 		platform_driver_unregister(&android_platform_driver);
@@ -1393,7 +1392,7 @@ static void __exit cleanup(void)
 	platform_driver_unregister(&android_platform_driver);
 	kfree(_device_mode_change_dev);
 	_device_mode_change_dev = NULL;
-	switch_dev_unregister(&_android_dev->sdev);
+	switch_dev_unregister(&_android_dev->sw_connected);
 	kfree(_android_dev);
 	_android_dev = NULL;
 }

@@ -28,6 +28,7 @@
 #include <linux/interrupt.h>
 #include <linux/irq.h>
 #include <linux/miscdevice.h>
+#include <linux/slab.h>
 #include <linux/uaccess.h>
 
 #include <linux/workqueue.h>
@@ -1023,7 +1024,7 @@ set_x_error:
 static const struct file_operations kxtf9_misc_fops = {
 	.owner = THIS_MODULE,
 	.open = kxtf9_misc_open,
-	.ioctl = kxtf9_misc_ioctl,
+	.unlocked_ioctl = kxtf9_misc_ioctl,
 };
 
 static struct miscdevice kxtf9_misc_device = {

@@ -111,6 +111,9 @@ struct usb_function {
 
 	struct usb_configuration	*config;
 
+#ifdef CONFIG_MACH_MOT
+	int             hidden;
+#endif
 	/* disabled is zero if the function is enabled */
 	int				disabled;
 
@@ -223,6 +226,9 @@ struct usb_configuration {
 	 */
 
 	/* configuration management: unbind/setup */
+#ifdef CONFIG_MACH_MOT
+	int			(*bind)(struct usb_configuration *);
+#endif
 	void			(*unbind)(struct usb_configuration *);
 	int			(*setup)(struct usb_configuration *,
 					const struct usb_ctrlrequest *);
@@ -293,6 +299,9 @@ struct usb_composite_driver {
 	struct class		*class;
 	atomic_t		function_count;
 
+#ifdef CONFIG_MACH_MOT
+	int			(*bind)(struct usb_composite_dev *);
+#endif
 	int			(*unbind)(struct usb_composite_dev *);
 
 	void			(*disconnect)(struct usb_composite_dev *);
@@ -309,6 +318,9 @@ extern int usb_composite_probe(struct usb_composite_driver *driver,
 extern void usb_composite_unregister(struct usb_composite_driver *driver);
 extern void usb_composite_setup_continue(struct usb_composite_dev *cdev);
 
+#ifdef CONFIG_MACH_MOT
+extern int usb_composite_register(struct usb_composite_driver *);
+#endif
 
 /**
  * struct usb_composite_device - represents one composite usb gadget

@@ -434,7 +434,7 @@ const struct file_operations sec_fops = {
 	.read = sec_read,
 	.open = sec_open,
 	.release = sec_release,
-	.ioctl = sec_ioctl
+	.unlocked_ioctl = sec_ioctl
 	//.compat_ioctl = sec_ioctl
 };
 

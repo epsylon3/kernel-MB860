@@ -21,6 +21,7 @@
 #include <linux/device.h>
 #include <linux/platform_device.h>
 #include <linux/rtc.h>
+#include <linux/slab.h>
 #include <linux/err.h>
 #include <linux/spi/cpcap.h>
 #ifdef CONFIG_RTC_INTF_SECCLKD
@@ -375,7 +376,7 @@ static struct rtc_class_ops cpcap_rtc_ops = {
 	.read_alarm		= cpcap_rtc_read_alarm,
 	.set_alarm		= cpcap_rtc_set_alarm,
 	.alarm_irq_enable 	= cpcap_rtc_alarm_irq_enable,
-	.update_irq_enable 	= cpcap_rtc_update_irq_enable,
+//	.update_irq_enable 	= cpcap_rtc_update_irq_enable,
 };
 
 static void cpcap_rtc_irq(enum cpcap_irqs irq, void *data)

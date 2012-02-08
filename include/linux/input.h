@@ -1251,7 +1251,7 @@ struct input_dev {
 	unsigned int repeat_key;
 	struct timer_list timer;
 
-	int rep[REP_CNT];
+//	int rep[REP_CNT];
 
 	struct input_mt_slot *mt;
 	int mtsize;
@@ -1264,6 +1264,14 @@ struct input_dev {
 	unsigned long led[BITS_TO_LONGS(LED_CNT)];
 	unsigned long snd[BITS_TO_LONGS(SND_CNT)];
 	unsigned long sw[BITS_TO_LONGS(SW_CNT)];
+
+  int abs[ABS_MAX + 1];
+  int rep[REP_MAX + 1];
+  int absmax[ABS_MAX + 1];
+  int absmin[ABS_MAX + 1];
+  int absfuzz[ABS_MAX + 1];
+  int absflat[ABS_MAX + 1];
+  int absres[ABS_MAX + 1];
 
 	int (*open)(struct input_dev *dev);
 	void (*close)(struct input_dev *dev);

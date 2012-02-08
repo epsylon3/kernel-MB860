@@ -78,7 +78,7 @@ static int mclk(bool enable)
 	int ret;
 	struct clk *mclk;
 
-	mclk = get_tegra_clock_by_name("vimclk");
+	mclk = tegra_get_clock_by_name("vimclk");
 	if (mclk == NULL) {
 		printk("nvodmcam: unable to find mclk by name\n");
 		return -EFAULT;

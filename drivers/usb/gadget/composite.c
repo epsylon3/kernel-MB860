@@ -29,6 +29,9 @@
 #include <linux/kdev_t.h>
 #include <linux/usb/composite.h>
 
+#ifdef CONFIG_USB_MOT_ANDROID
+#include "f_mot_android.h"
+#endif
 
 /*
  * The code in this file is utility code, used to build a gadget driver
@@ -942,6 +945,9 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 
 	/* we handle all standard USB descriptors */
 	case USB_REQ_GET_DESCRIPTOR:
+#ifdef CONFIG_USB_MOT_ANDROID
+		usb_data_transfer_callback();
+#endif
 		if (ctrl->bRequestType != USB_DIR_IN)
 			goto unknown;
 		switch (w_value >> 8) {

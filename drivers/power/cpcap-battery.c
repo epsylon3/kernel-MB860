@@ -82,7 +82,7 @@ struct cpcap_batt_ps {
 static const struct file_operations batt_fops = {
 	.owner = THIS_MODULE,
 	.open = cpcap_batt_open,
-	.ioctl = cpcap_batt_ioctl,
+	.unlocked_ioctl = cpcap_batt_ioctl,
 	.read = cpcap_batt_read,
 	.poll = cpcap_batt_poll,
 };

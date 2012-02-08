@@ -33,6 +33,7 @@
 #include <linux/workqueue.h>
 #include <linux/debugfs.h>
 #include <linux/wakelock.h>
+#include <linux/sched.h>
 #include <linux/timer.h>
 #include <linux/regulator/consumer.h>
 
@@ -732,18 +733,18 @@ static void bp_irq(struct work_struct *work)
 	if (gpio->irq_type & IRQ_TYPE_LEVEL_HIGH) {
 		gpio->irq_type &= ~IRQ_TYPE_LEVEL_HIGH;
 		gpio->irq_type |= IRQ_TYPE_LEVEL_LOW;
-		set_irq_type(gpio->irq, gpio->irq_type);
+		irq_set_irq_type(gpio->irq, gpio->irq_type);
 	} else if (gpio->irq_type & IRQ_TYPE_LEVEL_LOW) {
 		gpio->irq_type &= ~IRQ_TYPE_LEVEL_LOW;
 		gpio->irq_type |= IRQ_TYPE_LEVEL_HIGH;
-		set_irq_type(gpio->irq, gpio->irq_type);
+		irq_set_irq_type(gpio->irq, gpio->irq_type);
 
 		/* ...unless it's BP_RESOUT on buggy HW... */
 		if (mdm_ctrl.bp_resout_quirk &&
 		    gpio == &mdm_ctrl.gpios[BP_RESOUT]) {
 			gpio->irq_type = IRQ_TYPE_NONE;
 			/* Seems to be the only way to avoid stuck interrupt. */
-			set_irq_type(gpio->irq, IRQ_TYPE_EDGE_RISING);
+			irq_set_irq_type(gpio->irq, IRQ_TYPE_EDGE_RISING);
 			pr_debug("%s: bad BP_RESOUT signal; clobber IRQ %d\n",
 				__func__, gpio->irq);
 		}
@@ -1165,7 +1166,7 @@ static const struct file_operations mdm_ctrl_fops = {
 	.release = mdm_ctrl_release,
 	.poll = mdm_ctrl_poll,
 	.read = mdm_ctrl_read,
-	.ioctl = mdm_ctrl_ioctl,
+	.unlocked_ioctl = mdm_ctrl_ioctl,
 };
 
 static struct miscdevice mdm_ctrl_misc_device = {

@@ -89,7 +89,7 @@ static ssize_t fops_read(struct file *file, char *buf,
 
 static const struct file_operations fops = {
 	.owner = THIS_MODULE,
-	.ioctl = fops_ioctl,
+	.unlocked_ioctl = fops_ioctl,
 	.open = fops_open,
 	.read = fops_read,
 	.write = fops_write,
