@@ -1525,6 +1525,7 @@ void usb_composite_unregister(struct usb_composite_driver *driver)
 		return;
 	usb_gadget_unregister_driver(&composite_driver);
 }
+EXPORT_SYMBOL_GPL(usb_composite_unregister);
 
 /**
  * usb_composite_setup_continue() - Continue with the control transfer

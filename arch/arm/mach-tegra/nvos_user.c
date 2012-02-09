@@ -31,10 +31,13 @@
 #include <linux/uaccess.h>
 #include <linux/rwsem.h>
 #include <mach/irqs.h>
-#include "nvos.h"
-#include "nvos_ioctl.h"
+#include <nvos.h>
+#include <nvos_ioctl.h>
 #include "nvassert.h"
 #include <linux/err.h>
+
+#define lock_kernel()
+#define unlock_kernel()
 
 int nvos_open(struct inode *inode, struct file *file);
 int nvos_close(struct inode *inode, struct file *file);
@@ -80,11 +83,17 @@ typedef struct NvOsIrqListNodeRec
     NvOsInterruptHandle h;
 } NvOsIrqListNode;
 
+typedef struct
+{
+    NvOsPhysAddr base;
+    NvU32 size;
+} NvOsMemRangeParams2;
+
 typedef struct NvOsInstanceRec
 {
     struct rw_semaphore    RwLock;
     struct vm_area_struct *Vma;
-    NvOsMemRangeParams    *MemRange;
+    NvOsMemRangeParams2   *MemRange;
     struct task_struct    *tsk;
     spinlock_t             Lock;
     struct list_head       IrqHandles;
@@ -130,7 +139,7 @@ int nvos_open(struct inode *inode, struct file *filp)
     }
     init_rwsem(&Instance->RwLock);
     Instance->tsk = current;
-    Instance->pid = current->group_leader->pid;
+    //Instance->pid = current->group_leader->pid;
     Instance->MemRange = NULL;
     Instance->su = (filp->f_op == &knvos_fops);
     spin_lock_init(&Instance->Lock);

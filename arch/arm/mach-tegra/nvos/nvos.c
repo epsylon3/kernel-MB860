@@ -53,6 +53,7 @@
 #include <linux/vmalloc.h>
 #include <linux/pagemap.h>
 #include <linux/dma-mapping.h>
+#include <linux/slab.h>
 #include <asm/atomic.h>
 #include <asm/io.h>
 #include <asm/page.h>
@@ -1297,7 +1298,8 @@ void NvOsDataCacheWritebackRange(
     void *start,
     NvU32 length)
 {
-    dmac_clean_range(start, (NvU8*)start+length);
+    //dmac_clean_range(start, (NvU8*)start+length);
+    dmac_flush_range(start, (NvU8*)start+length);
 }
 
 void NvOsDataCacheWritebackInvalidateRange(

@@ -49,6 +49,8 @@ g_dbgp-y			:= dbgp.o
 g_nokia-y			:= nokia.o
 g_webcam-y			:= webcam.o
 g_ncm-y				:= ncm.o
+g_rndis-y			:= rndis.o
+g_composite			:= composite.o
 
 obj-$(CONFIG_USB_ZERO)		+= g_zero.o
 obj-$(CONFIG_USB_AUDIO)		+= g_audio.o
@@ -76,5 +78,5 @@ obj-$(CONFIG_USB_ANDROID_RNDIS)	+= f_rndis.o u_ether.o
 obj-$(CONFIG_USB_ANDROID_ACCESSORY)	+= f_accessory.o
 
 g_mot_android-objs := mot_android.o f_usbnet.o f_adb.o f_mass_storage.o f_acm.o u_serial.o f_rndis.o u_ether.o
-obj-$(CONFIG_USB_MOT_ANDROID)  += g_mot_android.o
+obj-$(CONFIG_USB_MOT_ANDROID)  += g_mot_android.o g_rndis.o
 

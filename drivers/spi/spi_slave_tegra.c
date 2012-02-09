@@ -38,7 +38,8 @@
 
 #include <mach/dma.h>
 #include <mach/clk.h>
-#include <mach/spi.h>
+//#include <mach/spi.h>
+#include <linux/types.h>
 
 #define SLINK_COMMAND		0x000
 #define   SLINK_BIT_LENGTH(x)		(((x) & 0x1f) << 0)
@@ -234,7 +235,10 @@ struct spi_tegra_data {
 	u32			def_command_reg;
 	u32			def_command2_reg;
 
+#ifdef SPI_SLAVE_USE_CALLBACKS
+	//where is defined this type ???
 	callback		client_slave_ready_cb;
+#endif
 	void			*client_data;
 
 	struct spi_clk_parent	*parent_clk_list;
@@ -260,6 +264,7 @@ static inline void spi_tegra_writel(struct spi_tegra_data *tspi,
 	writel(val, tspi->base + reg);
 }
 
+#ifdef SPI_SLAVE_USE_CALLBACKS
 int spi_tegra_register_callback(struct spi_device *spi, callback func,
 			void *client_data)
 {
@@ -272,6 +277,7 @@ int spi_tegra_register_callback(struct spi_device *spi, callback func,
 	return 0;
 }
 EXPORT_SYMBOL_GPL(spi_tegra_register_callback);
+#endif
 
 static void spi_tegra_clear_status(struct spi_tegra_data *tspi)
 {
@@ -740,9 +746,10 @@ static void spi_tegra_start_transfer(struct spi_device *spi,
 	else
 		ret = spi_tegra_start_cpu_based_transfer(tspi, t);
 	WARN_ON(ret < 0);
-
+#ifdef SPI_SLAVE_USE_CALLBACKS
 	if (tspi->client_slave_ready_cb)
 		tspi->client_slave_ready_cb(tspi->client_data);
+#endif
 }
 
 static void spi_tegra_start_message(struct spi_device *spi,

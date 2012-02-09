@@ -45,6 +45,14 @@
 #include "reset.h"
 #include "tegra_smmu.h"
 
+#ifdef CONFIG_MFD_CPCAP
+#include <linux/spi/cpcap.h>
+#include <mach/gpio.h>
+#include "gpio-names.h"
+#endif
+
+#include "board.h"
+
 #define MC_SECURITY_CFG2	0x7c
 
 #define AHB_ARBITRATION_PRIORITY_CTRL		0x4
@@ -174,6 +182,27 @@ static __initdata struct tegra_clk_init_table common_clk_init_table[] = {
 #endif
 	{ NULL,		NULL,		0,		0},
 };
+
+void tegra_machine_restart(char mode, const char *cmd)
+{
+#ifdef CONFIG_MFD_CPCAP
+	/* Disable powercut detection before restart */
+	/* NVSSW-992: FIXME: this can cause scheduling to happen via the SPI driver, which
+	   won't work if we are atomic (panic).
+	   cpcap_disable_powercut(); */
+
+	/* Assert SYSRSTRTB input to CPCAP to force cold restart */
+	gpio_request(TEGRA_GPIO_PZ2, "sysrstrtb");
+	gpio_set_value(TEGRA_GPIO_PZ2, 0);
+	gpio_direction_output(TEGRA_GPIO_PZ2, 0);
+#else
+	disable_nonboot_cpus();
+	flush_cache_all();
+	outer_shutdown();
+	arm_machine_restart(mode, cmd);
+#endif
+}
+EXPORT_SYMBOL(tegra_machine_restart);
 
 void tegra_init_cache(void)
 {

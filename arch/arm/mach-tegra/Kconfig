@@ -68,6 +68,7 @@ config MACH_ADAM
 config MACH_HARMONY
        bool "Harmony board"
        depends on ARCH_TEGRA_2x_SOC
+       default n
        select MACH_HAS_SND_SOC_TEGRA_WM8903 if SND_SOC
        help
          Support for NVIDIA Harmony development platform
@@ -75,6 +76,7 @@ config MACH_HARMONY
 config MACH_VENTANA
        bool "Ventana board"
        depends on ARCH_TEGRA_2x_SOC
+       default n
        select MACH_HAS_SND_SOC_TEGRA_WM8903 if SND_SOC
        help
          Support for NVIDIA Ventana development platform
@@ -399,10 +401,11 @@ endif
 config TEGRA_NVRM
 	bool
 	default y
+	select TEGRA_NVMAP
 
 config TEGRA_NVOS
 	bool
-        default n
+        default y
 
 config TEGRA_NVEC
 	bool
@@ -424,6 +427,9 @@ config MACH_MOT
 	bool "Motorola AP20 Products"
 	default n
 	select BOOTINFO
+	select USB_TEGRA_OTG
+	help
+	  USB_TEGRA_OTG is required to link board-mot-power.c
 
 config INPUT_MOT_WEBTOP
 	tristate "Input Motorola Webtop Devices"

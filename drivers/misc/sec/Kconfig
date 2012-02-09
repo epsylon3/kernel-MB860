@@ -7,5 +7,6 @@ menu "Motorola sec driver"
 config MOT_SEC_DRIVER
 	tristate "Motorola sec driver"
 	default n
+	depends on TEGRA_FUSE
 
 endmenu

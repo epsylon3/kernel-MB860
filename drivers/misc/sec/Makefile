@@ -21,5 +21,5 @@ MODULE_NAME = sec
 
 obj-$(CONFIG_MOT_SEC_DRIVER) += $(MODULE_NAME).o
 
-$(MODULE_NAME)-objs := sec_core.o tegra_exports.o
+$(MODULE_NAME)-objs := sec_core.o
 #bridge_pub2sec.o

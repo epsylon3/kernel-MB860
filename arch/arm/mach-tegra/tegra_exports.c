@@ -61,6 +61,7 @@ EXPORT_SYMBOL(NvOdmOsSemaphoreSignal);
 EXPORT_SYMBOL(NvOdmOsSemaphoreWait);
 EXPORT_SYMBOL(NvOdmOsSleepMS);
 EXPORT_SYMBOL(NvOdmPeripheralGetGuid);
+#if defined(CONFIG_TEGRA_NVMAP) && defined(CONFIG_TEGRA_NVRM)
 EXPORT_SYMBOL(NvRmOpen);
 EXPORT_SYMBOL(NvRmClose);
 EXPORT_SYMBOL(NvRegrb);
@@ -103,3 +104,4 @@ EXPORT_SYMBOL(NvRmSpiOpen);
 EXPORT_SYMBOL(NvRmSpiClose);
 EXPORT_SYMBOL(NvRmSpiStartTransaction);
 EXPORT_SYMBOL(NvRmSpiGetTransactionData);
+#endif

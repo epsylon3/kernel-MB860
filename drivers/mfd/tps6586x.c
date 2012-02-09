@@ -276,6 +276,7 @@ int tps6586x_power_off(void)
 
 	return 0;
 }
+EXPORT_SYMBOL_GPL(tps6586x_power_off);
 
 int tps6586x_cancel_sleep(void)
 {
