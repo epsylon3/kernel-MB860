@@ -33,6 +33,10 @@ obj-$(CONFIG_LEDS_CPCAP_BUTTON)		+= leds-cpcap-button.o
 obj-$(CONFIG_LEDS_CPCAP_RGB)		+= leds-cpcap-rgb.o
 obj-$(CONFIG_LEDS_LM3530)		+= leds-lm3530.o
 obj-$(CONFIG_LEDS_LM3532)		+= leds-lm3532.o
+obj-$(CONFIG_LEDS_REGULATOR)		+= leds-regulator.o
+obj-$(CONFIG_LEDS_INTEL_SS4200)		+= leds-ss4200.o
+obj-$(CONFIG_LEDS_LT3593)		+= leds-lt3593.o
+obj-$(CONFIG_LEDS_ADP5520)		+= leds-adp5520.o
 
 # LED SPI Drivers
 obj-$(CONFIG_LEDS_DAC124S085)		+= leds-dac124s085.o

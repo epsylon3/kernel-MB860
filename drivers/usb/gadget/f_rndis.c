@@ -4,6 +4,8 @@
  * Copyright (C) 2003-2005,2008 David Brownell
  * Copyright (C) 2003-2004 Robert Schwebel, Benedikt Spranger
  * Copyright (C) 2008 Nokia Corporation
+ * Copyright (C) 2009 Samsung Electronics
+ *                    Author: Michal Nazarewicz (m.nazarewicz@samsung.com)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -176,7 +178,7 @@ static struct usb_cdc_call_mgmt_descriptor call_mgmt_descriptor __initdata = {
 #ifdef CONFIG_USB_MOT_ANDROID
 static struct usb_cdc_acm_descriptor rndis_acm_descriptor = {
 #else
-static struct usb_cdc_acm_descriptor acm_descriptor __initdata = {
+static struct usb_cdc_acm_descriptor rndis_acm_descriptor __initdata = {
 #endif
 	.bLength =		sizeof rndis_acm_descriptor,
 	.bDescriptorType =	USB_DT_CS_INTERFACE,

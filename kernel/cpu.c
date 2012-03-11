@@ -155,10 +155,10 @@ static inline void check_for_tasks(int cpu)
 		if (task_cpu(p) == cpu && p->state == TASK_RUNNING &&
 		    (!cputime_eq(p->utime, cputime_zero) ||
 		     !cputime_eq(p->stime, cputime_zero)))
-			printk(KERN_WARNING "Task %s (pid = %d) is on cpu %d\
-				(state = %ld, flags = %x) \n",
-				 p->comm, task_pid_nr(p), cpu,
-				 p->state, p->flags);
+			printk(KERN_WARNING "Task %s (pid = %d) is on cpu %d "
+				"(state = %ld, flags = %x)\n",
+				p->comm, task_pid_nr(p), cpu,
+				p->state, p->flags);
 	}
 	write_unlock_irq(&tasklist_lock);
 }
@@ -226,6 +226,11 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
 		goto out_release;
 	}
 
+	/* Ensure that we are not runnable on dying cpu */
+/*
+	cpumask_copy(old_allowed, &current->cpus_allowed);
+	set_cpus_allowed_ptr(current, cpu_active_mask);
+*/
 	err = __stop_machine(take_cpu_down, &tcd_param, cpumask_of(cpu));
 	if (err) {
 		set_cpu_active(cpu, true);

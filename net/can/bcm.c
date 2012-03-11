@@ -146,13 +146,13 @@ static char *bcm_proc_getifname(char *result, int ifindex)
 	if (!ifindex)
 		return "any";
 
-	read_lock(&dev_base_lock);
-	dev = __dev_get_by_index(&init_net, ifindex);
+	rcu_read_lock();
+	dev = dev_get_by_index_rcu(&init_net, ifindex);
 	if (dev)
 		strcpy(result, dev->name);
 	else
 		strcpy(result, "???");
-	read_unlock(&dev_base_lock);
+	rcu_read_unlock();
 
 	return result;
 }
@@ -1599,7 +1599,6 @@ static struct proto bcm_proto __read_mostly = {
 static struct can_proto bcm_can_proto __read_mostly = {
 	.type       = SOCK_DGRAM,
 	.protocol   = CAN_BCM,
-	.capability = -1,
 	.ops        = &bcm_ops,
 	.prot       = &bcm_proto,
 };

@@ -5,32 +5,7 @@
 #include <linux/radix-tree.h>
 #include <linux/rcupdate.h>
 
-/*
- * This is the per-process anticipatory I/O scheduler state.
- */
-struct as_io_context {
-	spinlock_t lock;
-
-	void (*dtor)(struct as_io_context *aic); /* destructor */
-	void (*exit)(struct as_io_context *aic); /* called on task exit */
-
-	unsigned long state;
-	atomic_t nr_queued; /* queued reads & sync writes */
-	atomic_t nr_dispatched; /* number of requests gone to the drivers */
-
-	/* IO History tracking */
-	/* Thinktime */
-	unsigned long last_end_request;
-	unsigned long ttime_total;
-	unsigned long ttime_samples;
-	unsigned long ttime_mean;
-	/* Layout pattern */
-	unsigned int seek_samples;
-	sector_t last_request_pos;
-	u64 seek_total;
-	sector_t seek_mean;
-};
-
+struct cfq_queue;
 struct cfq_io_context {
 	void *key;
 	unsigned long dead_key;
@@ -78,7 +53,7 @@ struct io_context {
 	unsigned short ioprio;
 	DECLARE_BITMAP(ioprio_changed, IOC_IOPRIO_CHANGED_BITS);
 
-#if defined(CONFIG_BLK_CGROUP) || defined(CONFIG_BLK_CGROUP_MODULE)
+#ifdef CONFIG_BLK_CGROUP
 	unsigned short cgroup_changed;
 #endif
 
@@ -88,7 +63,6 @@ struct io_context {
 	unsigned long last_waited; /* Time last woken after wait for request */
 	int nr_batch_requests;     /* Number of requests left in the batch */
 
-	struct as_io_context *aic;
 	struct radix_tree_root radix_root;
 	struct hlist_head cic_list;
 	struct radix_tree_root bfq_radix_root;
@@ -110,14 +84,15 @@ static inline struct io_context *ioc_task_link(struct io_context *ioc)
 	return NULL;
 }
 
+struct task_struct;
 #ifdef CONFIG_BLOCK
 int put_io_context(struct io_context *ioc);
-void exit_io_context(void);
+void exit_io_context(struct task_struct *task);
 struct io_context *get_io_context(gfp_t gfp_flags, int node);
 struct io_context *alloc_io_context(gfp_t gfp_flags, int node);
 void copy_io_context(struct io_context **pdst, struct io_context **psrc);
 #else
-static inline void exit_io_context(void)
+static inline void exit_io_context(struct task_struct *task)
 {
 }
 

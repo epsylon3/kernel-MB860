@@ -9,6 +9,7 @@
 #include <linux/bootmem.h>	/* for max_pfn/max_low_pfn */
 #include <linux/gcd.h>
 #include <linux/lcm.h>
+#include <linux/jiffies.h>
 
 #include "blk.h"
 
@@ -97,7 +98,11 @@ void blk_set_default_limits(struct queue_limits *lim)
 	lim->max_segment_size = MAX_SEGMENT_SIZE;
 	lim->max_sectors = BLK_DEF_MAX_SECTORS;
 	lim->max_hw_sectors = INT_MAX;
-	lim->max_discard_sectors = SAFE_MAX_SECTORS;
+	lim->max_discard_sectors = 0;
+	lim->discard_granularity = 0;
+	lim->discard_alignment = 0;
+	lim->discard_misaligned = 0;
+	lim->discard_zeroes_data = -1;
 	lim->logical_block_size = lim->physical_block_size = lim->io_min = 512;
 	lim->bounce_pfn = (unsigned long)(BLK_BOUNCE_ANY >> PAGE_SHIFT);
 	lim->alignment_offset = 0;
@@ -142,7 +147,7 @@ void blk_queue_make_request(struct request_queue *q, make_request_fn *mfn)
 	q->nr_batching = BLK_BATCH_REQ;
 
 	q->unplug_thresh = 4;		/* hmm */
-	q->unplug_delay = (3 * HZ) / 1000;	/* 3 milliseconds */
+	q->unplug_delay = msecs_to_jiffies(3);	/* 3 milliseconds */
 	if (q->unplug_delay == 0)
 		q->unplug_delay = 1;
 
@@ -480,6 +485,18 @@ void blk_queue_stack_limits(struct request_queue *t, struct request_queue *b)
 }
 EXPORT_SYMBOL(blk_queue_stack_limits);
 
+#if 0 /* in lib/lcm */
+unsigned long lcm(unsigned long a, unsigned long b)
+{
+	if (a && b)
+		return (a * b) / gcd(a, b);
+	else if (b)
+		return b;
+
+	return a;
+}
+#endif
+
 /**
  * blk_stack_limits - adjust queue_limits for stacked devices
  * @t:	the stacking driver limits (top device)
@@ -553,6 +570,7 @@ int blk_stack_limits(struct queue_limits *t, struct queue_limits *b,
 	t->io_opt = lcm(t->io_opt, b->io_opt);
 
 	t->cluster &= b->cluster;
+	t->discard_zeroes_data &= b->discard_zeroes_data;
 
 	/* Physical block size a multiple of the logical block size? */
 	if (t->physical_block_size & (t->logical_block_size - 1)) {
@@ -585,9 +603,31 @@ int blk_stack_limits(struct queue_limits *t, struct queue_limits *b,
 		ret = -1;
 	}
 
-	/* Discard */
-	t->max_discard_sectors = min_not_zero(t->max_discard_sectors,
-					      b->max_discard_sectors);
+	/* Discard alignment and granularity */
+	if (b->discard_granularity) {
+		unsigned int granularity = b->discard_granularity;
+		offset &= granularity - 1;
+
+		alignment = (granularity + b->discard_alignment - offset)
+			& (granularity - 1);
+
+		if (t->discard_granularity != 0 &&
+		    t->discard_alignment != alignment) {
+			top = t->discard_granularity + t->discard_alignment;
+			bottom = b->discard_granularity + alignment;
+
+			/* Verify that top and bottom intervals line up */
+			if (max(top, bottom) & (min(top, bottom) - 1))
+				t->discard_misaligned = 1;
+		}
+
+		t->max_discard_sectors = min_not_zero(t->max_discard_sectors,
+						      b->max_discard_sectors);
+		t->discard_granularity = max(t->discard_granularity,
+					     b->discard_granularity);
+		t->discard_alignment = lcm(t->discard_alignment, alignment) &
+			(t->discard_granularity - 1);
+	}
 
 	return ret;
 }

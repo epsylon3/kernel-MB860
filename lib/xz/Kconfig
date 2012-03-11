@@ -13,14 +13,14 @@ config XZ_DEC_X86
 	select XZ_DEC_BCJ
 
 config XZ_DEC_POWERPC
-	bool "PowerPC BCJ filter decoder" if EMBEDDED
-	default y
+	bool "PowerPC BCJ filter decoder" if EMBEDDED && ARCH_POWERPC
+	default n
 	depends on XZ_DEC
 	select XZ_DEC_BCJ
 
 config XZ_DEC_IA64
 	bool "IA-64 BCJ filter decoder" if EMBEDDED
-	default y
+	default n
 	depends on XZ_DEC
 	select XZ_DEC_BCJ
 
@@ -38,7 +38,7 @@ config XZ_DEC_ARMTHUMB
 
 config XZ_DEC_SPARC
 	bool "SPARC BCJ filter decoder" if EMBEDDED
-	default y
+	default n
 	depends on XZ_DEC
 	select XZ_DEC_BCJ
 

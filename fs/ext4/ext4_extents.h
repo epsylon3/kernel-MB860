@@ -252,5 +252,8 @@ extern int ext4_ext_search_right(struct inode *, struct ext4_ext_path *,
 						ext4_lblk_t *, ext4_fsblk_t *);
 extern void ext4_ext_drop_refs(struct ext4_ext_path *);
 extern int ext4_ext_check_inode(struct inode *inode);
+
+#define EXT4_FREE_BLOCKS_VALIDATED  0x0004
+
 #endif /* _EXT4_EXTENTS */
 

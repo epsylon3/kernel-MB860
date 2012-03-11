@@ -105,15 +105,17 @@ struct net;
 /**
  *	struct sock_common - minimal network layer representation of sockets
  *	@skc_node: main hash linkage for various protocol lookup tables
- *	@skc_nulls_node: main hash linkage for UDP/UDP-Lite protocol
+ *	@skc_nulls_node: main hash linkage for TCP/UDP/UDP-Lite protocol
  *	@skc_refcnt: reference count
  *	@skc_tx_queue_mapping: tx queue number for this connection
  *	@skc_hash: hash value used with various protocol lookup tables
+ *	@skc_u16hashes: two u16 hash values used by UDP lookup tables
  *	@skc_family: network address family
  *	@skc_state: Connection state
  *	@skc_reuse: %SO_REUSEADDR setting
  *	@skc_bound_dev_if: bound device index if != 0
  *	@skc_bind_node: bind hash linkage for various protocol lookup tables
+ *	@skc_portaddr_node: second hash linkage for UDP/UDP-Lite protocol
  *	@skc_prot: protocol handlers inside a network family
  *	@skc_net: reference to the network namespace of this socket
  *
@@ -131,12 +133,18 @@ struct sock_common {
 	atomic_t		skc_refcnt;
 	int			skc_tx_queue_mapping;
 
-	unsigned int		skc_hash;
+	union  {
+		unsigned int	skc_hash;
+		__u16		skc_u16hashes[2];
+	};
 	unsigned short		skc_family;
 	volatile unsigned char	skc_state;
 	unsigned char		skc_reuse;
 	int			skc_bound_dev_if;
-	struct hlist_node	skc_bind_node;
+	union {
+		struct hlist_node	skc_bind_node;
+		struct hlist_nulls_node skc_portaddr_node;
+	};
 	struct proto		*skc_prot;
 #ifdef CONFIG_NET_NS
 	struct net	 	*skc_net;
@@ -1113,6 +1121,11 @@ static inline void sk_tx_queue_clear(struct sock *sk)
 static inline int sk_tx_queue_get(const struct sock *sk)
 {
 	return sk ? sk->sk_tx_queue_mapping : -1;
+}
+
+static inline bool sk_tx_queue_recorded(const struct sock *sk)
+{
+	return (sk && sk->sk_tx_queue_mapping >= 0);
 }
 
 static inline void sk_set_socket(struct sock *sk, struct socket *sock)

@@ -26,8 +26,6 @@
 # define B43_DEBUG	0
 #endif
 
-#define B43_RX_MAX_SSI			60
-
 /* MMIO offsets */
 #define B43_MMIO_DMA0_REASON		0x20
 #define B43_MMIO_DMA0_IRQ_MASK		0x24
@@ -825,9 +823,11 @@ struct b43_wl {
 	/* The device LEDs. */
 	struct b43_leds leds;
 
+#ifdef CONFIG_B43_PIO
 	/* Kmalloc'ed scratch space for PIO TX/RX. Protected by wl->mutex. */
 	u8 pio_scratchspace[110] __attribute__((__aligned__(8)));
 	u8 pio_tailspace[4] __attribute__((__aligned__(8)));
+#endif /* CONFIG_B43_PIO */
 };
 
 static inline struct b43_wl *hw_to_b43_wl(struct ieee80211_hw *hw)

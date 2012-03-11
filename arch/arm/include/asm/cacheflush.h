@@ -43,7 +43,8 @@
 #endif
 
 #if defined(CONFIG_CPU_ARM920T) || defined(CONFIG_CPU_ARM922T) || \
-    defined(CONFIG_CPU_ARM925T) || defined(CONFIG_CPU_ARM1020)
+    defined(CONFIG_CPU_ARM925T) || defined(CONFIG_CPU_ARM1020) || \
+    defined(CONFIG_CPU_ARM1026)
 # define MULTI_CACHE 1
 #endif
 
@@ -338,6 +339,17 @@ vivt_flush_cache_page(struct vm_area_struct *vma, unsigned long user_addr, unsig
 	}
 }
 
+static inline void
+vivt_flush_ptrace_access(struct vm_area_struct *vma, struct page *page,
+			 unsigned long uaddr, void *kaddr,
+			 unsigned long len, int write)
+{
+	if (cpumask_test_cpu(smp_processor_id(), mm_cpumask(vma->vm_mm))) {
+		unsigned long addr = (unsigned long)kaddr;
+		__cpuc_coherent_kern_range(addr, addr + len);
+	}
+}
+
 #ifndef CONFIG_CPU_CACHE_VIPT
 #define flush_cache_mm(mm) \
 		vivt_flush_cache_mm(mm)
@@ -345,6 +357,8 @@ vivt_flush_cache_page(struct vm_area_struct *vma, unsigned long user_addr, unsig
 		vivt_flush_cache_range(vma,start,end)
 #define flush_cache_page(vma,addr,pfn) \
 		vivt_flush_cache_page(vma,addr,pfn)
+#define flush_ptrace_access(vma,page,ua,ka,len,write) \
+		vivt_flush_ptrace_access(vma,page,ua,ka,len,write)
 #else
 extern void flush_cache_mm(struct mm_struct *mm);
 extern void flush_cache_range(struct vm_area_struct *vma, unsigned long start, unsigned long end);

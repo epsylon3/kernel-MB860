@@ -48,6 +48,20 @@ struct cgroup_subsys blkio_subsys = {
 };
 EXPORT_SYMBOL_GPL(blkio_subsys);
 
+bool blkiocg_css_tryget(struct blkio_cgroup *blkcg)
+{
+	if (!css_tryget(&blkcg->css))
+		return false;
+	return true;
+}
+EXPORT_SYMBOL_GPL(blkiocg_css_tryget);
+
+void blkiocg_css_put(struct blkio_cgroup *blkcg)
+{
+	css_put(&blkcg->css);
+}
+EXPORT_SYMBOL_GPL(blkiocg_css_put);
+
 struct blkio_cgroup *cgroup_to_blkio_cgroup(struct cgroup *cgroup)
 {
 	return container_of(cgroup_subsys_state(cgroup, blkio_subsys_id),

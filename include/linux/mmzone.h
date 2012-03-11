@@ -15,7 +15,7 @@
 #include <linux/seqlock.h>
 #include <linux/nodemask.h>
 #include <linux/pageblock-flags.h>
-#include <linux/bounds.h>
+#include <generated/bounds.h>
 #include <asm/atomic.h>
 #include <asm/page.h>
 
@@ -435,6 +435,8 @@ typedef enum {
 	ZONE_ALL_UNRECLAIMABLE,		/* all pages pinned */
 	ZONE_RECLAIM_LOCKED,		/* prevents concurrent reclaim */
 	ZONE_OOM_LOCKED,		/* zone is in OOM killer zonelist */
+	ZONE_CONGESTED,			/* zone has many dirty pages backed by
+					 * a congested BDI */
 } zone_flags_t;
 
 static inline void zone_set_flag(struct zone *zone, zone_flags_t flag)
@@ -450,6 +452,11 @@ static inline int zone_test_and_set_flag(struct zone *zone, zone_flags_t flag)
 static inline void zone_clear_flag(struct zone *zone, zone_flags_t flag)
 {
 	clear_bit(flag, &zone->flags);
+}
+
+static inline int zone_is_reclaim_congested(const struct zone *zone)
+{
+	return test_bit(ZONE_CONGESTED, &zone->flags);
 }
 
 static inline int zone_is_all_unreclaimable(const struct zone *zone)

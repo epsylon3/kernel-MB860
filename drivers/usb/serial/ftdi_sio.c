@@ -786,7 +786,7 @@ static struct usb_device_id id_table_combined [] = {
 	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_AD4USB_PID) },
 	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_GMUX_PID) },
 	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_GMSR_PID) },
-
+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_AD4USB_PID) },
 	{ USB_DEVICE(FTDI_VID, FTDI_DOMINTELL_DGQG_PID) },
 	{ USB_DEVICE(FTDI_VID, FTDI_DOMINTELL_DUSB_PID) },
 	{ USB_DEVICE(ALTI2_VID, ALTI2_N3_PID) },
@@ -2378,15 +2378,21 @@ static void ftdi_set_termios(struct tty_struct *tty,
 
 	/* Set number of data bits, parity, stop bits */
 
-	termios->c_cflag &= ~CMSPAR;
-
 	urb_value = 0;
 	urb_value |= (cflag & CSTOPB ? FTDI_SIO_SET_DATA_STOP_BITS_2 :
 		      FTDI_SIO_SET_DATA_STOP_BITS_1);
-	urb_value |= (cflag & PARENB ?
-		      (cflag & PARODD ? FTDI_SIO_SET_DATA_PARITY_ODD :
-		       FTDI_SIO_SET_DATA_PARITY_EVEN) :
-		      FTDI_SIO_SET_DATA_PARITY_NONE);
+	if (cflag & PARENB) {
+		if (cflag & CMSPAR)
+			urb_value |= cflag & PARODD ?
+				     FTDI_SIO_SET_DATA_PARITY_MARK :
+				     FTDI_SIO_SET_DATA_PARITY_SPACE;
+		else
+			urb_value |= cflag & PARODD ?
+				     FTDI_SIO_SET_DATA_PARITY_ODD :
+				     FTDI_SIO_SET_DATA_PARITY_EVEN;
+	} else {
+		urb_value |= FTDI_SIO_SET_DATA_PARITY_NONE;
+	}
 	if (cflag & CSIZE) {
 		switch (cflag & CSIZE) {
 		case CS5: urb_value |= 5; dbg("Setting CS5"); break;

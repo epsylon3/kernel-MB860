@@ -274,7 +274,7 @@ static void sock_disable_timestamp(struct sock *sk, int flag)
 
 int sock_queue_rcv_skb(struct sock *sk, struct sk_buff *skb)
 {
-	int err = 0;
+	int err;
 	int skb_len;
 	unsigned long flags;
 	struct sk_buff_head *list = &sk->sk_receive_queue;
@@ -284,17 +284,17 @@ int sock_queue_rcv_skb(struct sock *sk, struct sk_buff *skb)
 	 */
 	if (atomic_read(&sk->sk_rmem_alloc) + skb->truesize >=
 	    (unsigned)sk->sk_rcvbuf) {
-		err = -ENOMEM;
-		goto out;
+		atomic_inc(&sk->sk_drops);
+		return -ENOMEM;
 	}
 
 	err = sk_filter(sk, skb);
 	if (err)
-		goto out;
+		return err;
 
 	if (!sk_rmem_schedule(sk, skb->truesize)) {
-		err = -ENOBUFS;
-		goto out;
+		atomic_inc(&sk->sk_drops);
+		return -ENOBUFS;
 	}
 
 	skb->dev = NULL;
@@ -319,8 +319,7 @@ int sock_queue_rcv_skb(struct sock *sk, struct sk_buff *skb)
 
 	if (!sock_flag(sk, SOCK_DEAD))
 		sk->sk_data_ready(sk, skb_len);
-out:
-	return err;
+	return 0;
 }
 EXPORT_SYMBOL(sock_queue_rcv_skb);
 
@@ -357,6 +356,12 @@ discard_and_relse:
 	goto out;
 }
 EXPORT_SYMBOL(sk_receive_skb);
+
+void sk_reset_txq(struct sock *sk)
+{
+	sk_tx_queue_clear(sk);
+}
+EXPORT_SYMBOL(sk_reset_txq);
 
 struct dst_entry *__sk_dst_check(struct sock *sk, u32 cookie)
 {
@@ -417,17 +422,18 @@ static int sock_bindtodevice(struct sock *sk, char __user *optval, int optlen)
 	if (copy_from_user(devname, optval, optlen))
 		goto out;
 
-	if (devname[0] == '\0') {
-		index = 0;
-	} else {
-		struct net_device *dev = dev_get_by_name(net, devname);
+	index = 0;
+	if (devname[0] != '\0') {
+		struct net_device *dev;
 
+		rcu_read_lock();
+		dev = dev_get_by_name_rcu(net, devname);
+		if (dev)
+			index = dev->ifindex;
+		rcu_read_unlock();
 		ret = -ENODEV;
 		if (!dev)
 			goto out;
-
-		index = dev->ifindex;
-		dev_put(dev);
 	}
 
 	lock_sock(sk);

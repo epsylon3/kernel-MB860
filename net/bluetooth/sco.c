@@ -434,7 +434,8 @@ static struct sock *sco_sock_alloc(struct net *net, struct socket *sock, int pro
 	return sk;
 }
 
-static int sco_sock_create(struct net *net, struct socket *sock, int protocol)
+static int sco_sock_create(struct net *net, struct socket *sock, int protocol,
+			   int kern)
 {
 	struct sock *sk;
 
@@ -1021,7 +1022,7 @@ static const struct proto_ops sco_sock_ops = {
 	.getsockopt	= sco_sock_getsockopt
 };
 
-static struct net_proto_family sco_sock_family_ops = {
+static const struct net_proto_family sco_sock_family_ops = {
 	.family	= PF_BLUETOOTH,
 	.owner	= THIS_MODULE,
 	.create	= sco_sock_create,

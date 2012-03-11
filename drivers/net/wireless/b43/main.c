@@ -1796,7 +1796,9 @@ static void b43_do_interrupt_thread(struct b43_wldev *dev)
 			       "on your system. Please use PIO instead.\n");
 			/* Fall back to PIO transfers if we get fatal DMA errors! */
 			dev->use_pio = 1;
-			b43_controller_restart(dev, "DMA error");
+			b43_controller_restart(dev, "DMA error ! "
+			       "CONFIG_B43_FORCE_PIO must be set in "
+			       "your kernel configuration.\n");
 			return;
 		}
 		if (merged_dma_reason & B43_DMAIRQ_NONFATALMASK) {
@@ -3585,7 +3587,7 @@ static int b43_op_config(struct ieee80211_hw *hw, u32 changed)
 	if (conf->channel->hw_value != phy->channel)
 		b43_switch_channel(dev, conf->channel->hw_value);
 
-	dev->wl->radiotap_enabled = !!(conf->flags & IEEE80211_CONF_RADIOTAP);
+	dev->wl->radiotap_enabled = !!(conf->flags & IEEE80211_CONF_MONITOR);
 
 	/* Adjust the desired TX power level. */
 	if (conf->power_level != 0) {
@@ -4680,7 +4682,7 @@ static int b43_wireless_core_attach(struct b43_wldev *dev)
 {
 	struct b43_wl *wl = dev->wl;
 	struct ssb_bus *bus = dev->dev->bus;
-	struct pci_dev *pdev = bus->host_pci;
+	struct pci_dev *pdev = (bus->bustype == SSB_BUSTYPE_PCI) ? bus->host_pci : NULL;
 	int err;
 	bool have_2ghz_phy = 0, have_5ghz_phy = 0;
 	u32 tmp;
@@ -4813,7 +4815,7 @@ static int b43_one_core_attach(struct ssb_device *dev, struct b43_wl *wl)
 
 	if (!list_empty(&wl->devlist)) {
 		/* We are not the first core on this chip. */
-		pdev = dev->bus->host_pci;
+		pdev = (dev->bus->bustype == SSB_BUSTYPE_PCI) ? dev->bus->host_pci : NULL;
 		/* Only special chips support more than one wireless
 		 * core, although some of the other chips have more than
 		 * one wireless core as well. Check for this and

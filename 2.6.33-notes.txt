@@ -1,0 +1,15 @@
+Merge of 2.6.33 into Kernel 2.6.32.58
+
+Compilation for the Atrix works, but still doesnt boot...
+
+
+to double check later after the merge :
+-------------------
+arch/arm/mm/cache-l2x0.c
+arch/arm/include/asm/dma-mapping.h
+mm/memcontrol.c
+mm/vmscan.c
+block/cfq-iosched.c
+
+arch/arm/boot/compressed/decompress.c
+arch/arm/boot/compressed/misc.c

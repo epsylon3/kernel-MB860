@@ -51,6 +51,7 @@
 static int disable_cfc = 0;
 static int channel_mtu = -1;
 static unsigned int l2cap_mtu = RFCOMM_MAX_L2CAP_MTU;
+static int l2cap_ertm = 0;
 
 static struct task_struct *rfcomm_thread;
 
@@ -242,6 +243,32 @@ static inline int rfcomm_check_security(struct rfcomm_dlc *d)
 
 	return hci_conn_security(l2cap_pi(sk)->conn->hcon, d->sec_level,
 								auth_type);
+}
+
+static void rfcomm_session_timeout(unsigned long arg)
+{
+	struct rfcomm_session *s = (void *) arg;
+
+	BT_DBG("session %p state %ld", s, s->state);
+
+	set_bit(RFCOMM_TIMED_OUT, &s->flags);
+	rfcomm_schedule(RFCOMM_SCHED_TIMEO);
+}
+
+static void rfcomm_session_set_timer(struct rfcomm_session *s, long timeout)
+{
+	BT_DBG("session %p state %ld timeout %ld", s, s->state, timeout);
+
+	if (!mod_timer(&s->timer, jiffies + timeout))
+		rfcomm_session_hold(s);
+}
+
+static void rfcomm_session_clear_timer(struct rfcomm_session *s)
+{
+	BT_DBG("session %p state %ld", s, s->state);
+
+	if (timer_pending(&s->timer) && del_timer(&s->timer))
+		rfcomm_session_put(s);
 }
 
 /* ---- RFCOMM DLCs ---- */
@@ -665,6 +692,8 @@ static struct rfcomm_session *rfcomm_session_create(bdaddr_t *src, bdaddr_t *dst
 	sk = sock->sk;
 	lock_sock(sk);
 	l2cap_pi(sk)->imtu = l2cap_mtu;
+	if (l2cap_ertm)
+		l2cap_pi(sk)->mode = L2CAP_MODE_ERTM;
 	release_sock(sk);
 
 	s = rfcomm_session_add(sock, BT_BOUND);
@@ -1111,6 +1140,9 @@ static int rfcomm_recv_ua(struct rfcomm_session *s, u8 dlci)
 			break;
 
 		case BT_DISCONN:
+			/* When socket is closed and we are not RFCOMM
+			 * initiator rfcomm_process_rx already calls
+			 * rfcomm_session_put() */
 			if (s->sock->sk->sk_state != BT_CLOSED)
 				rfcomm_session_put(s);
 			break;
@@ -1866,6 +1898,13 @@ static inline void rfcomm_process_sessions(void)
 		struct rfcomm_session *s;
 		s = list_entry(p, struct rfcomm_session, list);
 
+		if (test_and_clear_bit(RFCOMM_TIMED_OUT, &s->flags)) {
+			s->state = BT_DISCONN;
+			rfcomm_send_disc(s, 0);
+			rfcomm_session_put(s);
+			continue;
+		}
+
 		if (s->state == BT_LISTEN) {
 			rfcomm_accept_connection(s);
 			continue;
@@ -2141,6 +2180,9 @@ MODULE_PARM_DESC(channel_mtu, "Default MTU for the RFCOMM channel");
 
 module_param(l2cap_mtu, uint, 0644);
 MODULE_PARM_DESC(l2cap_mtu, "Default MTU for the L2CAP connection");
+
+module_param(l2cap_ertm, bool, 0644);
+MODULE_PARM_DESC(l2cap_ertm, "Use L2CAP ERTM mode for connection");
 
 MODULE_AUTHOR("Marcel Holtmann <marcel@holtmann.org>");
 MODULE_DESCRIPTION("Bluetooth RFCOMM ver " VERSION);

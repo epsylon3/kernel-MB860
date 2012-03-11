@@ -28,9 +28,9 @@ void suspend_device_irqs(void)
 	for_each_irq_desc(irq, desc) {
 		unsigned long flags;
 
-		spin_lock_irqsave(&desc->lock, flags);
+		raw_spin_lock_irqsave(&desc->lock, flags);
 		__disable_irq(desc, irq, true);
-		spin_unlock_irqrestore(&desc->lock, flags);
+		raw_spin_unlock_irqrestore(&desc->lock, flags);
 	}
 
 	for_each_irq_desc(irq, desc)
@@ -52,9 +52,9 @@ static void resume_irqs(bool want_early)
 		if (is_early != want_early)
 			continue;
 
-		spin_lock_irqsave(&desc->lock, flags);
+		raw_spin_lock_irqsave(&desc->lock, flags);
 		__enable_irq(desc, irq, true);
-		spin_unlock_irqrestore(&desc->lock, flags);
+		raw_spin_unlock_irqrestore(&desc->lock, flags);
 	}
 }
 

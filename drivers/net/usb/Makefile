@@ -12,7 +12,6 @@ obj-$(CONFIG_USB_NET_CDCETHER)	+= cdc_ether.o
 obj-$(CONFIG_USB_NET_CDC_EEM)	+= cdc_eem.o
 obj-$(CONFIG_USB_NET_DM9601)	+= dm9601.o
 ifeq ($(CONFIG_PM),y)
-obj-$(CONFIG_USB_NET_SMSC95XX)  += smsc9500.o
 obj-$(CONFIG_USB_NET_SMSC95XX)  += smscusbnet.o
 else
 obj-$(CONFIG_USB_NET_SMSC95XX)  += smsc95xx.o

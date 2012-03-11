@@ -371,6 +371,26 @@ void dpm_resume_noirq(pm_message_t state)
 EXPORT_SYMBOL_GPL(dpm_resume_noirq);
 
 /**
+ * legacy_resume - Execute a legacy (bus or class) resume callback for device.
+ * @dev: Device to resume.
+ * @cb: Resume callback to execute.
+ */
+static int legacy_resume(struct device *dev, int (*cb)(struct device *dev))
+{
+	int error;
+	ktime_t calltime;
+
+	calltime = initcall_debug_start(dev);
+
+	error = cb(dev);
+	suspend_report_result(cb, error);
+
+	initcall_debug_report(dev, calltime, error);
+
+	return error;
+}
+
+/**
  * device_resume - Execute "resume" callbacks for given device.
  * @dev: Device to handle.
  * @state: PM transition of the system being carried out.
@@ -396,7 +416,7 @@ static int device_resume(struct device *dev, pm_message_t state, bool async)
 			error = dpm_run_callback(dev, dev->bus->pm->resume);
 		} else if (dev->bus->resume) {
 			pm_dev_dbg(dev, state, "legacy ");
-			error = dpm_run_callback(dev, dev->bus->resume);
+			error = legacy_resume(dev, dev->bus->resume);
 		}
 		if (error)
 			goto End;
@@ -417,7 +437,7 @@ static int device_resume(struct device *dev, pm_message_t state, bool async)
 			error = dpm_run_callback(dev, dev->class->pm->resume);
 		} else if (dev->class->resume) {
 			pm_dev_dbg(dev, state, "legacy class ");
-			error = dpm_run_callback(dev, dev->class->resume);
+			error = legacy_resume(dev, dev->class->resume);
 		}
 	}
  End:
@@ -843,6 +863,7 @@ static int dpm_suspend(pm_message_t state)
 			put_device(dev);
 			break;
 		}
+		dev->power.status = DPM_OFF;
 		if (!list_empty(&dev->power.entry))
 			list_move(&dev->power.entry, &list);
 		put_device(dev);

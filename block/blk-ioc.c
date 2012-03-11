@@ -39,8 +39,10 @@ int put_io_context(struct io_context *ioc)
 
 	if (atomic_long_dec_and_test(&ioc->refcount)) {
 		rcu_read_lock();
+#ifdef CONFIG_IOSCHED_AS
 		if (ioc->aic && ioc->aic->dtor)
 			ioc->aic->dtor(ioc->aic);
+#endif
 
 		hlist_sched_dtor(ioc, &ioc->cic_list);
 		hlist_sched_dtor(ioc, &ioc->bfq_cic_list);
@@ -67,19 +69,20 @@ static void hlist_sched_exit(struct io_context *ioc, struct hlist_head *list)
 }
 
 /* Called by the exitting task */
-void exit_io_context(void)
+void exit_io_context(struct task_struct *task)
 {
 	struct io_context *ioc;
 
-	task_lock(current);
-	ioc = current->io_context;
-	current->io_context = NULL;
-	task_unlock(current);
+	task_lock(task);
+	ioc = task->io_context;
+	task->io_context = NULL;
+	task_unlock(task);
 
 	if (atomic_dec_and_test(&ioc->nr_tasks)) {
+#ifdef CONFIG_IOSCHED_AS
 		if (ioc->aic && ioc->aic->exit)
 			ioc->aic->exit(ioc->aic);
-
+#endif
 		hlist_sched_exit(ioc, &ioc->cic_list);
 		hlist_sched_exit(ioc, &ioc->bfq_cic_list);
 
@@ -100,7 +103,6 @@ struct io_context *alloc_io_context(gfp_t gfp_flags, int node)
 		ret->ioprio = 0;
 		ret->last_waited = jiffies; /* doesn't matter... */
 		ret->nr_batch_requests = 0; /* because this is 0 */
-		ret->aic = NULL;
 		INIT_RADIX_TREE(&ret->radix_root, GFP_ATOMIC | __GFP_HIGH);
 		INIT_HLIST_HEAD(&ret->cic_list);
 		INIT_RADIX_TREE(&ret->bfq_radix_root, GFP_ATOMIC | __GFP_HIGH);

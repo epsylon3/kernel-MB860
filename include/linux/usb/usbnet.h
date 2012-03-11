@@ -88,13 +88,14 @@ struct driver_info {
 
 #define FLAG_NO_SETINT	0x0010		/* device can't set_interface() */
 #define FLAG_ETHER	0x0020		/* maybe use "eth%d" names */
-#define FLAG_USBETHER   0x8000		/* flag for usb ehternet dongle */
 
 #define FLAG_FRAMING_AX 0x0040		/* AX88772/178 packets */
 #define FLAG_WLAN	0x0080		/* use "wlan%d" names */
 #define FLAG_AVOID_UNLINK_URBS 0x0100	/* don't unlink urbs at usbnet_stop() */
 #define FLAG_SEND_ZLP	0x0200		/* hw requires ZLPs are sent */
+#define FLAG_WWAN	0x0400		/* use "wwan%d" names */
 
+#define FLAG_LINK_INTR	0x0800		/* updates link (carrier) status */
 
 	/* init device ... can sleep, or cause probe() failure */
 	int	(*bind)(struct usbnet *, struct usb_interface *);

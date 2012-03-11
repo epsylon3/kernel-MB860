@@ -155,7 +155,7 @@ static int rcu_hz_delta_us = RCU_HZ_DELTA_US;
 
 static int rcu_hz_precise;
 
-int rcu_scheduler_active __read_mostly;
+static int rcu_scheduler_active __read_mostly;
 int rcu_nmi_seen __read_mostly;
 
 static int rcu_wdog_ctr;	/* time since last end-of-batch, in usecs */

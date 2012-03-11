@@ -841,6 +841,7 @@ int hvc_remove(struct hvc_struct *hp)
 	}
 	return 0;
 }
+EXPORT_SYMBOL_GPL(hvc_remove);
 
 /* Driver initialization: called as soon as someone uses hvc_alloc(). */
 static int hvc_init(void)

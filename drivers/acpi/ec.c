@@ -307,7 +307,7 @@ static int acpi_ec_transaction(struct acpi_ec *ec, struct transaction *t)
 	pr_debug(PREFIX "transaction start\n");
 	/* disable GPE during transaction if storm is detected */
 	if (test_bit(EC_FLAGS_GPE_STORM, &ec->flags)) {
-		acpi_set_gpe(NULL, ec->gpe, ACPI_GPE_DISABLE);
+		acpi_disable_gpe(NULL, ec->gpe);
 	}
 
 	status = acpi_ec_transaction_unlocked(ec, t);
@@ -317,7 +317,7 @@ static int acpi_ec_transaction(struct acpi_ec *ec, struct transaction *t)
 	if (test_bit(EC_FLAGS_GPE_STORM, &ec->flags)) {
 		msleep(1);
 		/* it is safe to enable GPE outside of transaction */
-		acpi_set_gpe(NULL, ec->gpe, ACPI_GPE_ENABLE);
+		acpi_enable_gpe(NULL, ec->gpe);
 	} else if (t->irq_count > ACPI_EC_STORM_THRESHOLD) {
 		pr_info(PREFIX "GPE storm detected, "
 			"transactions will use polling mode\n");
@@ -536,7 +536,8 @@ static int acpi_ec_sync_query(struct acpi_ec *ec)
 				return -ENOMEM;
 			memcpy(copy, handler, sizeof(*copy));
 			pr_debug(PREFIX "push query execution (0x%2x) on queue\n", value);
-			return acpi_os_execute(OSL_GPE_HANDLER,
+			return acpi_os_execute((copy->func) ?
+				OSL_NOTIFY_HANDLER : OSL_GPE_HANDLER,
 				acpi_ec_run, copy);
 		}
 	}
@@ -588,12 +589,12 @@ static u32 acpi_ec_gpe_handler(void *data)
 
 static acpi_status
 acpi_ec_space_handler(u32 function, acpi_physical_address address,
-		      u32 bits, acpi_integer *value64,
+		      u32 bits, acpi_integer *value,
 		      void *handler_context, void *region_context)
 {
 	struct acpi_ec *ec = handler_context;
-	int result = 0, i, bytes = bits / 8;
-	u8 *value = (u8 *)value64;
+	int result = 0, i;
+	u8 temp = 0;
 
 	if ((address > 0xFF) || !value || !handler_context)
 		return AE_BAD_PARAMETER;
@@ -601,15 +602,32 @@ acpi_ec_space_handler(u32 function, acpi_physical_address address,
 	if (function != ACPI_READ && function != ACPI_WRITE)
 		return AE_BAD_PARAMETER;
 
-	if (EC_FLAGS_MSI || bits > 8)
+	if (bits != 8 && acpi_strict)
+		return AE_BAD_PARAMETER;
+
+	if (EC_FLAGS_MSI)
 		acpi_ec_burst_enable(ec);
 
-	for (i = 0; i < bytes; ++i, ++address, ++value)
-		result = (function == ACPI_READ) ?
-			acpi_ec_read(ec, address, value) :
-			acpi_ec_write(ec, address, *value);
+	if (function == ACPI_READ) {
+		result = acpi_ec_read(ec, address, &temp);
+		*value = temp;
+	} else {
+		temp = 0xff & (*value);
+		result = acpi_ec_write(ec, address, temp);
+	}
 
-	if (EC_FLAGS_MSI || bits > 8)
+	for (i = 8; unlikely(bits - i > 0); i += 8) {
+		++address;
+		if (function == ACPI_READ) {
+			result = acpi_ec_read(ec, address, &temp);
+			(*value) |= ((acpi_integer)temp) << i;
+		} else {
+			temp = 0xff & ((*value) >> i);
+			result = acpi_ec_write(ec, address, temp);
+		}
+	}
+
+	if (EC_FLAGS_MSI)
 		acpi_ec_burst_disable(ec);
 
 	switch (result) {
@@ -770,8 +788,8 @@ static int ec_install_handlers(struct acpi_ec *ec)
 				  &acpi_ec_gpe_handler, ec);
 	if (ACPI_FAILURE(status))
 		return -ENODEV;
-
-	acpi_enable_gpe(NULL, ec->gpe, ACPI_GPE_TYPE_RUNTIME);
+	acpi_set_gpe_type(NULL, ec->gpe, ACPI_GPE_TYPE_RUNTIME);
+	acpi_enable_gpe(NULL, ec->gpe);
 	status = acpi_install_address_space_handler(ec->handle,
 						    ACPI_ADR_SPACE_EC,
 						    &acpi_ec_space_handler,
@@ -788,7 +806,6 @@ static int ec_install_handlers(struct acpi_ec *ec)
 		} else {
 			acpi_remove_gpe_handler(NULL, ec->gpe,
 				&acpi_ec_gpe_handler);
-			acpi_disable_gpe(NULL, ec->gpe, ACPI_GPE_TYPE_RUNTIME);
 			return -ENODEV;
 		}
 	}
@@ -799,7 +816,6 @@ static int ec_install_handlers(struct acpi_ec *ec)
 
 static void ec_remove_handlers(struct acpi_ec *ec)
 {
-	acpi_disable_gpe(NULL, ec->gpe, ACPI_GPE_TYPE_RUNTIME);
 	if (ACPI_FAILURE(acpi_remove_address_space_handler(ec->handle,
 				ACPI_ADR_SPACE_EC, &acpi_ec_space_handler)))
 		pr_err(PREFIX "failed to remove space handler\n");
@@ -838,7 +854,7 @@ static int acpi_ec_add(struct acpi_device *device)
 
 	/* Find and register all query methods */
 	acpi_walk_namespace(ACPI_TYPE_METHOD, ec->handle, 1,
-			    acpi_ec_register_query_methods, ec, NULL);
+			    acpi_ec_register_query_methods, NULL, ec, NULL);
 
 	if (!first_ec)
 		first_ec = ec;
@@ -955,9 +971,6 @@ static struct dmi_system_id __initdata ec_dmi_table[] = {
 	ec_flag_msi, "MSI hardware", {
 	DMI_MATCH(DMI_CHASSIS_VENDOR, "MICRO-Star")}, NULL},
 	{
-	ec_flag_msi, "MSI hardware", {
-	DMI_MATCH(DMI_CHASSIS_VENDOR, "MICRO-STAR")}, NULL},
-	{
 	ec_validate_ecdt, "ASUS hardware", {
 	DMI_MATCH(DMI_BIOS_VENDOR, "ASUS") }, NULL},
 	{},
@@ -1045,7 +1058,7 @@ static int acpi_ec_suspend(struct acpi_device *device, pm_message_t state)
 {
 	struct acpi_ec *ec = acpi_driver_data(device);
 	/* Stop using GPE */
-	acpi_set_gpe(NULL, ec->gpe, ACPI_GPE_DISABLE);
+	acpi_disable_gpe(NULL, ec->gpe);
 	return 0;
 }
 
@@ -1053,7 +1066,7 @@ static int acpi_ec_resume(struct acpi_device *device)
 {
 	struct acpi_ec *ec = acpi_driver_data(device);
 	/* Enable use of GPE back */
-	acpi_set_gpe(NULL, ec->gpe, ACPI_GPE_ENABLE);
+	acpi_enable_gpe(NULL, ec->gpe);
 	return 0;
 }
 

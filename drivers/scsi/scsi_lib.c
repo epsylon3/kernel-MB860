@@ -870,6 +870,7 @@ void scsi_io_completion(struct scsi_cmnd *cmd, unsigned int good_bytes)
 				case 0x07: /* operation in progress */
 				case 0x08: /* Long write in progress */
 				case 0x09: /* self test in progress */
+				case 0x14: /* space allocation in progress */
 					action = ACTION_DELAYED_RETRY;
 					break;
 				default:
@@ -909,7 +910,7 @@ void scsi_io_completion(struct scsi_cmnd *cmd, unsigned int good_bytes)
 				scsi_print_sense("", cmd);
 			scsi_print_command(cmd);
 		}
-		if (blk_end_request_err(req, -EIO))
+		if (blk_end_request_err(req, error))
 			scsi_requeue_command(q, cmd);
 		else
 			scsi_next_command(cmd);

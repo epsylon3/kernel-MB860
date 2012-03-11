@@ -170,8 +170,6 @@ print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
 }
 #endif
 
-extern unsigned long long time_sync_thresh;
-
 /*
  * Task state bitmask. NOTE! These bits are also
  * encoded in fs/proc/array.c: get_task_state().
@@ -194,6 +192,12 @@ extern unsigned long long time_sync_thresh;
 #define TASK_DEAD		64
 #define TASK_WAKEKILL		128
 #define TASK_WAKING		256
+#define TASK_STATE_MAX		512
+
+#define TASK_STATE_TO_CHAR_STR "RSDTtZXxKW"
+
+extern char ___assert_task_state[1 - 2*!!(
+		sizeof(TASK_STATE_TO_CHAR_STR)-1 != ilog2(TASK_STATE_MAX)+1)];
 
 /* Convenience macros for the sake of set_task_state */
 #define TASK_KILLABLE		(TASK_WAKEKILL | TASK_UNINTERRUPTIBLE)
@@ -306,6 +310,7 @@ extern void sched_show_task(struct task_struct *p);
 #ifdef CONFIG_DETECT_SOFTLOCKUP
 extern void softlockup_tick(void);
 extern void touch_softlockup_watchdog(void);
+extern void touch_softlockup_watchdog_sync(void);
 extern void touch_all_softlockup_watchdogs(void);
 extern int proc_dosoftlockup_thresh(struct ctl_table *table, int write,
 				    void __user *buffer,
@@ -317,6 +322,9 @@ static inline void softlockup_tick(void)
 {
 }
 static inline void touch_softlockup_watchdog(void)
+{
+}
+static inline void touch_softlockup_watchdog_sync(void)
 {
 }
 static inline void touch_all_softlockup_watchdogs(void)
@@ -348,7 +356,6 @@ extern signed long schedule_timeout(signed long timeout);
 extern signed long schedule_timeout_interruptible(signed long timeout);
 extern signed long schedule_timeout_killable(signed long timeout);
 extern signed long schedule_timeout_uninterruptible(signed long timeout);
-asmlinkage void __schedule(void);
 asmlinkage void schedule(void);
 extern int mutex_spin_on_owner(struct mutex *lock, struct thread_info *owner);
 
@@ -374,6 +381,8 @@ extern int sysctl_max_map_count;
 
 #include <linux/aio.h>
 
+#ifdef CONFIG_MMU
+extern void arch_pick_mmap_layout(struct mm_struct *mm);
 extern unsigned long
 arch_get_unmapped_area(struct file *, unsigned long, unsigned long,
 		       unsigned long, unsigned long);
@@ -383,6 +392,9 @@ arch_get_unmapped_area_topdown(struct file *filp, unsigned long addr,
 			  unsigned long flags);
 extern void arch_unmap_area(struct mm_struct *, unsigned long);
 extern void arch_unmap_area_topdown(struct mm_struct *, unsigned long);
+#else
+static inline void arch_pick_mmap_layout(struct mm_struct *mm) {}
+#endif
 
 #if USE_SPLIT_PTLOCKS
 /*
@@ -1012,8 +1024,12 @@ static inline struct cpumask *sched_domain_span(struct sched_domain *sd)
 	return to_cpumask(sd->span);
 }
 
-extern void partition_sched_domains(int ndoms_new, struct cpumask *doms_new,
+extern void partition_sched_domains(int ndoms_new, cpumask_var_t doms_new[],
 				    struct sched_domain_attr *dattr_new);
+
+/* Allocate an array of sched domains, for partition_sched_domains(). */
+cpumask_var_t *alloc_sched_domains(unsigned int ndoms);
+void free_sched_domains(cpumask_var_t doms[], unsigned int ndoms);
 
 /* Test a flag in parent sched domain */
 static inline int test_sd_parent(struct sched_domain *sd, int flag)
@@ -1032,7 +1048,7 @@ unsigned long default_scale_smt_power(struct sched_domain *sd, int cpu);
 struct sched_domain_attr;
 
 static inline void
-partition_sched_domains(int ndoms_new, struct cpumask *doms_new,
+partition_sched_domains(int ndoms_new, cpumask_var_t doms_new[],
 			struct sched_domain_attr *dattr_new)
 {
 }
@@ -1065,8 +1081,7 @@ struct sched_domain;
 struct sched_class {
 	const struct sched_class *next;
 
-	void (*enqueue_task) (struct rq *rq, struct task_struct *p, int wakeup,
-			      bool head);
+	void (*enqueue_task) (struct rq *rq, struct task_struct *p, int wakeup);/*, bool head); */
 	void (*dequeue_task) (struct rq *rq, struct task_struct *p, int sleep);
 	void (*yield_task) (struct rq *rq);
 
@@ -1076,8 +1091,9 @@ struct sched_class {
 	void (*put_prev_task) (struct rq *rq, struct task_struct *p);
 
 #ifdef CONFIG_SMP
-	int  (*select_task_rq)(struct rq *rq, struct task_struct *p,
-			       int sd_flag, int flags);
+	/* 2.6.32 
+	int  (*select_task_rq)(struct rq *rq, struct task_struct *p, int sd_flag, int flags); */
+	int  (*select_task_rq)(struct task_struct *p, int sd_flag, int flags);
 
 	unsigned long (*load_balance) (struct rq *this_rq, int this_cpu,
 			struct rq *busiest, unsigned long max_load_move,
@@ -1114,6 +1130,7 @@ struct sched_class {
 					 struct task_struct *task);
 
 #ifdef CONFIG_FAIR_GROUP_SCHED
+	void (*moved_group) (struct task_struct *p, int on_rq);
 	void (*task_move_group) (struct task_struct *p, int on_rq);
 #endif
 };
@@ -1150,8 +1167,6 @@ struct sched_entity {
 
 	u64			start_runtime;
 	u64			avg_wakeup;
-
-	u64			avg_running;
 
 #ifdef CONFIG_SCHEDSTATS
 	u64			wait_start;
@@ -1333,7 +1348,9 @@ struct task_struct {
 
 	cputime_t utime, stime, utimescaled, stimescaled;
 	cputime_t gtime;
+#ifndef CONFIG_VIRT_CPU_ACCOUNTING
 	cputime_t prev_utime, prev_stime;
+#endif
 	unsigned long nvcsw, nivcsw; /* context switch counts */
 	struct timespec start_time; 		/* monotonic time */
 	struct timespec real_start_time;	/* boot based time */
@@ -1408,7 +1425,7 @@ struct task_struct {
 #endif
 
 	/* Protection of the PI data structures: */
-	spinlock_t pi_lock;
+	raw_spinlock_t pi_lock;
 
 #ifdef CONFIG_RT_MUTEXES
 	/* PI waiters blocked on a rt_mutex held by this task */
@@ -1423,17 +1440,17 @@ struct task_struct {
 #endif
 #ifdef CONFIG_TRACE_IRQFLAGS
 	unsigned int irq_events;
-	int hardirqs_enabled;
 	unsigned long hardirq_enable_ip;
-	unsigned int hardirq_enable_event;
 	unsigned long hardirq_disable_ip;
+	unsigned int hardirq_enable_event;
 	unsigned int hardirq_disable_event;
-	int softirqs_enabled;
-	unsigned long softirq_disable_ip;
-	unsigned int softirq_disable_event;
-	unsigned long softirq_enable_ip;
-	unsigned int softirq_enable_event;
+	int hardirqs_enabled;
 	int hardirq_context;
+	unsigned long softirq_disable_ip;
+	unsigned long softirq_enable_ip;
+	unsigned int softirq_disable_event;
+	unsigned int softirq_enable_event;
+	int softirqs_enabled;
 	int softirq_context;
 #endif
 #ifdef CONFIG_LOCKDEP
@@ -1552,7 +1569,7 @@ struct task_struct {
 };
 
 /* Future-safe accessor for struct task_struct's cpus_allowed. */
-#define tsk_cpumask(tsk) (&(tsk)->cpus_allowed)
+#define tsk_cpus_allowed(tsk) (&(tsk)->cpus_allowed)
 
 /*
  * Priority of a process goes from 0..MAX_PRIO-1, valid RT
@@ -1733,6 +1750,7 @@ static inline void put_task_struct(struct task_struct *t)
 extern cputime_t task_utime(struct task_struct *p);
 extern cputime_t task_stime(struct task_struct *p);
 extern cputime_t task_gtime(struct task_struct *p);
+extern void task_times(struct task_struct *p, cputime_t *ut, cputime_t *st);
 extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *st);
 
 extern int task_free_register(struct notifier_block *n);
@@ -1849,7 +1867,8 @@ static inline int set_cpus_allowed(struct task_struct *p, cpumask_t new_mask)
 extern int sched_clock_stable;
 #endif
 
-extern unsigned long long sched_clock(void);
+/* ftrace calls sched_clock() directly */
+extern unsigned long long notrace sched_clock(void);
 
 extern void sched_clock_init(void);
 extern u64 sched_clock_cpu(int cpu);
@@ -1928,14 +1947,22 @@ extern unsigned int sysctl_sched_wakeup_granularity;
 extern unsigned int sysctl_sched_shares_ratelimit;
 extern unsigned int sysctl_sched_shares_thresh;
 extern unsigned int sysctl_sched_child_runs_first;
+
+enum sched_tunable_scaling {
+	SCHED_TUNABLESCALING_NONE,
+	SCHED_TUNABLESCALING_LOG,
+	SCHED_TUNABLESCALING_LINEAR,
+	SCHED_TUNABLESCALING_END,
+};
+extern enum sched_tunable_scaling sysctl_sched_tunable_scaling;
+
 #ifdef CONFIG_SCHED_DEBUG
-extern unsigned int sysctl_sched_features;
 extern unsigned int sysctl_sched_migration_cost;
 extern unsigned int sysctl_sched_nr_migrate;
 extern unsigned int sysctl_sched_time_avg;
 extern unsigned int sysctl_timer_migration;
 
-int sched_nr_latency_handler(struct ctl_table *table, int write,
+int sched_proc_update_handler(struct ctl_table *table, int write,
 		void __user *buffer, size_t *length,
 		loff_t *ppos);
 #endif
@@ -2091,7 +2118,6 @@ extern int kill_proc_info(int, struct siginfo *, pid_t);
 extern int do_notify_parent(struct task_struct *, int);
 extern void __wake_up_parent(struct task_struct *p, struct task_struct *parent);
 extern void force_sig(int, struct task_struct *);
-extern void force_sig_specific(int, struct task_struct *);
 extern int send_sig(int, struct task_struct *, int);
 extern void zap_other_threads(struct task_struct *p);
 extern struct sigqueue *sigqueue_alloc(void);
@@ -2109,11 +2135,6 @@ static inline int kill_cad_pid(int sig, int priv)
 #define SEND_SIG_NOINFO ((struct siginfo *) 0)
 #define SEND_SIG_PRIV	((struct siginfo *) 1)
 #define SEND_SIG_FORCED	((struct siginfo *) 2)
-
-static inline int is_si_special(const struct siginfo *info)
-{
-	return info <= SEND_SIG_FORCED;
-}
 
 /*
  * True if we are on the alternate signal stack.
@@ -2500,8 +2521,6 @@ static inline void set_task_cpu(struct task_struct *p, unsigned int cpu)
 
 #endif /* CONFIG_SMP */
 
-extern void arch_pick_mmap_layout(struct mm_struct *mm);
-
 #ifdef CONFIG_TRACING
 extern void
 __trace_special(void *__tr, void *__data,
@@ -2605,8 +2624,6 @@ static inline void mm_init_owner(struct mm_struct *mm, struct task_struct *p)
 {
 }
 #endif /* CONFIG_MM_OWNER */
-
-#define TASK_STATE_TO_CHAR_STR "RSDTtZX"
 
 static inline unsigned long task_rlimit(const struct task_struct *tsk,
 		unsigned int limit)

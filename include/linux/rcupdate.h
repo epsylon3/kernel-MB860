@@ -53,7 +53,6 @@ extern void synchronize_rcu(void);
 #define synchronize_rcu synchronize_sched
 #endif /* #else #ifdef CONFIG_TREE_PREEMPT_RCU */
 
-/* Exported common interfaces */
 extern void synchronize_rcu_bh(void);
 extern void synchronize_sched(void);
 extern void rcu_barrier(void);
@@ -71,7 +70,6 @@ extern int rcu_needs_cpu(int cpu);
 static inline int rcu_needs_cpu(int cpu) { return 0; }
 #endif
 extern int rcu_scheduler_active;
-extern void rcu_scheduler_starting(void);
 
 #if defined(CONFIG_TREE_RCU) || defined(CONFIG_TREE_PREEMPT_RCU)
 #include <linux/rcutree.h>

@@ -309,8 +309,8 @@
  * Hameg HO820 and HO870 interface (using VID 0x0403)
  */
 #define        HAMEG_HO820_PID         0xed74
-#define HAMEG_HO730_PID			0xed73
-#define HAMEG_HO720_PID			0xed72
+#define        HAMEG_HO730_PID         0xed73
+#define        HAMEG_HO720_PID         0xed72
 #define        HAMEG_HO870_PID         0xed71
 
 /*
@@ -625,6 +625,9 @@
 #define ICOM_ID_RP4KVR_PID	0x0011 /* ID-RP4000V Receive config port */
 #define ICOM_ID_RP2KVT_PID	0x0012 /* ID-RP2000V Transmit config port */
 #define ICOM_ID_RP2KVR_PID	0x0013 /* ID-RP2000V Receive config port */
+/* Compat */
+#define ICOM_ID1_VID            0x0C26
+#define ICOM_ID1_PID            0x0004
 
 /*
  * GN Otometrics (http://www.otometrics.com)

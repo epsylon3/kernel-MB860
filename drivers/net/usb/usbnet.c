@@ -140,8 +140,8 @@ int usbnet_get_endpoints(struct usbnet *dev, struct usb_interface *intf)
 	if (!alt || !in || !out)
 		return -EINVAL;
 
-	if (alt->desc.bAlternateSetting != 0
-			|| !(dev->driver_info->flags & FLAG_NO_SETINT)) {
+	if (alt->desc.bAlternateSetting != 0 ||
+	    !(dev->driver_info->flags & FLAG_NO_SETINT)) {
 		tmp = usb_set_interface (dev->udev, alt->desc.bInterfaceNumber,
 				alt->desc.bAlternateSetting);
 		if (tmp < 0)
@@ -392,8 +392,8 @@ static void rx_submit (struct usbnet *dev, struct urb *urb, gfp_t flags)
 
 static inline void rx_process (struct usbnet *dev, struct sk_buff *skb)
 {
-	if (dev->driver_info->rx_fixup
-			&& !dev->driver_info->rx_fixup (dev, skb))
+	if (dev->driver_info->rx_fixup &&
+	    !dev->driver_info->rx_fixup (dev, skb))
 		goto error;
 	// else network stack removes extra byte if we forced a short packet
 
@@ -485,8 +485,8 @@ block:
 	defer_bh(dev, skb, &dev->rxq);
 
 	if (urb) {
-		if (netif_running (dev->net)
-				&& !test_bit (EVENT_RX_HALT, &dev->flags)) {
+		if (netif_running (dev->net) &&
+		    !test_bit (EVENT_RX_HALT, &dev->flags)) {
 			rx_submit (dev, urb, GFP_ATOMIC);
 			return;
 		}
@@ -1190,10 +1190,10 @@ static void usbnet_bh (unsigned long param)
 		}
 
 	// or are we maybe short a few urbs?
-	} else if (netif_running (dev->net)
-			&& netif_device_present (dev->net)
-			&& !timer_pending (&dev->delay)
-			&& !test_bit (EVENT_RX_HALT, &dev->flags)) {
+	} else if (netif_running (dev->net) &&
+		   netif_device_present (dev->net) &&
+		   !timer_pending (&dev->delay) &&
+		   !test_bit (EVENT_RX_HALT, &dev->flags)) {
 		int	temp = dev->rxq.qlen;
 		int	qlen = RX_QLEN (dev);
 
@@ -1273,6 +1273,14 @@ static const struct net_device_ops usbnet_netdev_ops = {
 /*-------------------------------------------------------------------------*/
 
 // precondition: never called in_interrupt
+
+static struct device_type wlan_type = {
+	.name	= "wlan",
+};
+
+static struct device_type wwan_type = {
+	.name	= "wwan",
+};
 
 int
 usbnet_probe (struct usb_interface *udev, const struct usb_device_id *prod)
@@ -1354,15 +1362,15 @@ usbnet_probe (struct usb_interface *udev, const struct usb_device_id *prod)
 		// heuristic:  "usb%d" for links we know are two-host,
 		// else "eth%d" when there's reasonable doubt.  userspace
 		// can rename the link if it knows better.
-		if ((dev->driver_info->flags & FLAG_ETHER) != 0
-				&& (net->dev_addr [0] & 0x02) == 0)
+		if ((dev->driver_info->flags & FLAG_ETHER) != 0 &&
+		    (net->dev_addr [0] & 0x02) == 0)
 			strcpy (net->name, "eth%d");
-		if ((dev->driver_info->flags & FLAG_USBETHER) != 0
-		    && (net->dev_addr [0] & 0x02) == 0)
-                        strcpy (net->name, "usbeth%d");
 		/* WLAN devices should always be named "wlan%d" */
 		if ((dev->driver_info->flags & FLAG_WLAN) != 0)
 			strcpy(net->name, "wlan%d");
+		/* WWAN devices should always be named "wwan%d" */
+		if ((dev->driver_info->flags & FLAG_WWAN) != 0)
+			strcpy(net->name, "wwan%d");
 
 		/* maybe the remote can't receive an Ethernet MTU */
 		if (net->mtu > (dev->hard_mtu - net->hard_header_len))
@@ -1390,6 +1398,12 @@ usbnet_probe (struct usb_interface *udev, const struct usb_device_id *prod)
 	dev->maxpacket = usb_maxpacket (dev->udev, dev->out, 1);
 
 	SET_NETDEV_DEV(net, &udev->dev);
+
+	if ((dev->driver_info->flags & FLAG_WLAN) != 0)
+		SET_NETDEV_DEVTYPE(net, &wlan_type);
+	if ((dev->driver_info->flags & FLAG_WWAN) != 0)
+		SET_NETDEV_DEVTYPE(net, &wwan_type);
+
 	status = register_netdev (net);
 	if (status)
 		goto out3;
@@ -1403,8 +1417,10 @@ usbnet_probe (struct usb_interface *udev, const struct usb_device_id *prod)
 	// ok, it's ready to go.
 	usb_set_intfdata (udev, dev);
 
-	// start as if the link is up
 	netif_device_attach (net);
+
+	if (dev->driver_info->flags & FLAG_LINK_INTR)
+		netif_carrier_off(net);
 
 	return 0;
 

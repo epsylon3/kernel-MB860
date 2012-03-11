@@ -53,6 +53,7 @@
 #include "xfs_log_priv.h"
 #include "xfs_filestream.h"
 #include "xfs_vnodeops.h"
+#include "xfs_trace.h"
 
 int
 xfs_setattr(
@@ -523,9 +524,8 @@ xfs_readlink_bmap(
 		d = XFS_FSB_TO_DADDR(mp, mval[n].br_startblock);
 		byte_cnt = XFS_FSB_TO_B(mp, mval[n].br_blockcount);
 
-		bp = xfs_buf_read_flags(mp->m_ddev_targp, d, BTOBB(byte_cnt),
-					XBF_LOCK | XBF_MAPPED |
-					XBF_DONT_BLOCK);
+		bp = xfs_buf_read(mp->m_ddev_targp, d, BTOBB(byte_cnt),
+				  XBF_LOCK | XBF_MAPPED | XBF_DONT_BLOCK);
 		error = XFS_BUF_GETERROR(bp);
 		if (error) {
 			xfs_ioerror_alert("xfs_readlink",
@@ -1375,7 +1375,6 @@ xfs_lookup(
 	if (error)
 		goto out_free_name;
 
-	xfs_itrace_ref(*ipp);
 	return 0;
 
 out_free_name:
@@ -1521,7 +1520,6 @@ xfs_create(
 	 * At this point, we've gotten a newly allocated inode.
 	 * It is locked (and joined to the transaction).
 	 */
-	xfs_itrace_ref(ip);
 	ASSERT(xfs_isilocked(ip, XFS_ILOCK_EXCL));
 
 	/*
@@ -1981,9 +1979,6 @@ xfs_remove(
 	if (!is_dir && link_zero && xfs_inode_is_filestream(ip))
 		xfs_filestream_deassociate(ip);
 
-	xfs_itrace_exit(ip);
-	xfs_itrace_exit(dp);
-
  std_return:
 	if (DM_EVENT_ENABLED(dp, DM_EVENT_POSTREMOVE)) {
 		XFS_SEND_NAMESP(mp, DM_EVENT_POSTREMOVE, dp, DM_RIGHT_NULL,
@@ -2280,7 +2275,6 @@ xfs_symlink(
 			goto error_return;
 		goto error1;
 	}
-	xfs_itrace_ref(ip);
 
 	/*
 	 * An error after we've joined dp to the transaction will result in the
@@ -2823,7 +2817,6 @@ xfs_free_file_space(
 	ioffset = offset & ~(rounding - 1);
 
 	if (VN_CACHED(VFS_I(ip)) != 0) {
-		xfs_inval_cached_trace(ip, ioffset, -1, ioffset, -1);
 		error = xfs_flushinval_pages(ip, ioffset, -1, FI_REMAPF_LOCKED);
 		if (error)
 			goto out_unlock_iolock;

@@ -595,13 +595,14 @@ static struct proto econet_proto = {
  *	Create an Econet socket
  */
 
-static int econet_create(struct net *net, struct socket *sock, int protocol)
+static int econet_create(struct net *net, struct socket *sock, int protocol,
+			 int kern)
 {
 	struct sock *sk;
 	struct econet_sock *eo;
 	int err;
 
-	if (net != &init_net)
+	if (!net_eq(net, &init_net))
 		return -EAFNOSUPPORT;
 
 	/* Econet only provides datagram services. */
@@ -735,7 +736,7 @@ static int econet_ioctl(struct socket *sock, unsigned int cmd, unsigned long arg
 	return 0;
 }
 
-static struct net_proto_family econet_family_ops = {
+static const struct net_proto_family econet_family_ops = {
 	.family =	PF_ECONET,
 	.create =	econet_create,
 	.owner	=	THIS_MODULE,

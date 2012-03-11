@@ -15,7 +15,6 @@
 #include <linux/bitops.h>
 #include <linux/log2.h>
 #include <linux/typecheck.h>
-#include <linux/ratelimit.h>
 #include <linux/dynamic_debug.h>
 #include <asm/byteorder.h>
 #include <asm/bug.h>
@@ -248,8 +247,8 @@ asmlinkage int vprintk(const char *fmt, va_list args)
 asmlinkage int printk(const char * fmt, ...)
 	__attribute__ ((format (printf, 1, 2))) __cold;
 
-extern struct ratelimit_state printk_ratelimit_state;
-extern int printk_ratelimit(void);
+extern int __printk_ratelimit(const char *func);
+#define printk_ratelimit() __printk_ratelimit(__func__)
 extern bool printk_timed_ratelimit(unsigned long *caller_jiffies,
 				   unsigned int interval_msec);
 
@@ -259,10 +258,10 @@ extern int printk_delay_msec;
  * Print a one-time message (analogous to WARN_ONCE() et al):
  */
 #define printk_once(x...) ({			\
-	static bool __print_once = true;	\
+	static bool __print_once;		\
 						\
-	if (__print_once) {			\
-		__print_once = false;		\
+	if (!__print_once) {			\
+		__print_once = true;		\
 		printk(x);			\
 	}					\
 })
@@ -405,9 +404,8 @@ static inline char *pack_hex_byte(char *buf, u8 byte)
 	printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
 #elif defined(CONFIG_DYNAMIC_DEBUG)
 /* dynamic_pr_debug() uses pr_fmt() internally so we don't need it here */
-#define pr_debug(fmt, ...) do { \
-	dynamic_pr_debug(fmt, ##__VA_ARGS__); \
-	} while (0)
+#define pr_debug(fmt, ...) \
+	dynamic_pr_debug(fmt, ##__VA_ARGS__)
 #else
 #define pr_debug(fmt, ...) \
 	({ if (0) printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__); 0; })
@@ -543,6 +541,8 @@ extern int
 __trace_printk(unsigned long ip, const char *fmt, ...)
 	__attribute__ ((format (printf, 2, 3)));
 
+extern void trace_dump_stack(void);
+
 /*
  * The double __builtin_constant_p is because gcc will give us an error
  * if we try to allocate the static variable to fmt if it is not a
@@ -576,6 +576,7 @@ trace_printk(const char *fmt, ...) __attribute__ ((format (printf, 1, 2)));
 static inline void tracing_start(void) { }
 static inline void tracing_stop(void) { }
 static inline void ftrace_off_permanent(void) { }
+static inline void trace_dump_stack(void) { }
 static inline int
 trace_printk(const char *fmt, ...)
 {
@@ -745,6 +746,10 @@ struct sysinfo {
 
 /* Force a compilation error if condition is constant and true */
 #define MAYBE_BUILD_BUG_ON(cond) ((void)sizeof(char[1 - 2 * !!(cond)]))
+
+/* Force a compilation error if a constant expression is not a power of 2 */
+#define BUILD_BUG_ON_NOT_POWER_OF_2(n)			\
+	BUILD_BUG_ON((n) == 0 || (((n) & ((n) - 1)) != 0))
 
 /* Force a compilation error if condition is true, but also produce a
    result (of value 0 and type size_t), so the expression can be used

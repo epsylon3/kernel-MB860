@@ -15,7 +15,16 @@
 #include <stdio.h>
 #include <ctype.h>
 #include "modpost.h"
+#include "../../include/generated/autoconf.h"
 #include "../../include/linux/license.h"
+
+/* Some toolchains use a `_' prefix for all user symbols. */
+#ifdef CONFIG_SYMBOL_PREFIX
+#define MODULE_SYMBOL_PREFIX CONFIG_SYMBOL_PREFIX
+#else
+#define MODULE_SYMBOL_PREFIX ""
+#endif
+
 
 /* Are we using CONFIG_MODVERSIONS? */
 int modversions = 0;
@@ -451,8 +460,6 @@ static int parse_elf(struct elf_info *info, const char *filename)
 			info->export_unused_gpl_sec = i;
 		else if (strcmp(secname, "__ksymtab_gpl_future") == 0)
 			info->export_gpl_future_sec = i;
-		else if (strcmp(secname, "__markers_strings") == 0)
-			info->markers_strings_sec = i;
 
 		if (sechdrs[i].sh_type != SHT_SYMTAB)
 			continue;
@@ -515,7 +522,7 @@ static void handle_modversions(struct module *mod, struct elf_info *info,
 		break;
 	case SHN_ABS:
 		/* CRC'd symbol */
-		if (memcmp(symname, CRC_PFX, strlen(CRC_PFX)) == 0) {
+		if (strncmp(symname, CRC_PFX, strlen(CRC_PFX)) == 0) {
 			crc = (unsigned int) sym->st_value;
 			sym_update_crc(symname + strlen(CRC_PFX), mod, crc,
 					export);
@@ -559,7 +566,7 @@ static void handle_modversions(struct module *mod, struct elf_info *info,
 		break;
 	default:
 		/* All exported symbols */
-		if (memcmp(symname, KSYMTAB_PFX, strlen(KSYMTAB_PFX)) == 0) {
+		if (strncmp(symname, KSYMTAB_PFX, strlen(KSYMTAB_PFX)) == 0) {
 			sym_add_exported(symname + strlen(KSYMTAB_PFX), mod,
 					export);
 		}
@@ -1311,7 +1318,7 @@ static unsigned int *reloc_location(struct elf_info *elf,
 	int section = sechdr->sh_info;
 
 	return (void *)elf->hdr + sechdrs[section].sh_offset +
-		r->r_offset - sechdrs[section].sh_addr;
+		(r->r_offset - sechdrs[section].sh_addr);
 }
 
 static int addend_386_rel(struct elf_info *elf, Elf_Shdr *sechdr, Elf_Rela *r)
@@ -1620,8 +1627,6 @@ static void read_symbols(char *modname)
 	if (version || (all_versions && !is_vmlinux(modname)))
 		get_src_version(modname, mod->srcversion,
 				sizeof(mod->srcversion)-1);
-
-	get_markers(&info, mod);
 
 	parse_elf_finish(&info);
 
@@ -2080,8 +2085,6 @@ int main(int argc, char **argv)
 	struct buffer buf = { };
 	char *kernel_read = NULL, *module_read = NULL;
 	char *dump_write = NULL;
-	char *markers_read = NULL;
-	char *markers_write = NULL;
 	int opt;
 	int err;
 	struct ext_sym_list *extsym_iter;
@@ -2125,12 +2128,6 @@ int main(int argc, char **argv)
 		case 'w':
 			warn_unresolved = 1;
 			break;
-			case 'M':
-				markers_write = optarg;
-				break;
-			case 'K':
-				markers_read = optarg;
-				break;
 		default:
 			exit(1);
 		}
@@ -2184,12 +2181,6 @@ int main(int argc, char **argv)
 		     "To see full details build your kernel with:\n"
 		     "'make CONFIG_DEBUG_SECTION_MISMATCH=y'\n",
 		     sec_mismatch_count);
-
-	if (markers_read)
-		read_markers(markers_read);
-
-	if (markers_write)
-		write_markers(markers_write);
 
 	return err;
 }

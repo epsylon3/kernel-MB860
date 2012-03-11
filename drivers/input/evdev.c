@@ -73,10 +73,11 @@ static void evdev_pass_event(struct evdev_client *client,
 	spin_unlock(&client->buffer_lock);
 
 	if (buffer_overflow)
-		printk(KERN_ERR "evdev: %s: buffer overflow\n",
+		printk(KERN_WARNING "evdev: %s: buffer overflow\n",
 			client->name);
 
-	kill_fasync(&client->fasync, SIGIO, POLL_IN);
+	if (event->type == EV_SYN)
+		kill_fasync(&client->fasync, SIGIO, POLL_IN);
 }
 
 /*
