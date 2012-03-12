@@ -87,8 +87,9 @@ struct driver_info {
 #define FLAG_FRAMING_RN	0x0008		/* RNDIS batches, plus huge header */
 
 #define FLAG_NO_SETINT	0x0010		/* device can't set_interface() */
-#define FLAG_ETHER	0x0020		/* maybe use "eth%d" names */
-#define FLAG_USBETHER   0x8000		/* flag for usb ehternet dongle */
+#define FLAG_ETHER	0x0020		/* Mainline Linux usb ethernet */
+
+#define FLAG_USBETHER	0x0020		/* old flag for usb ethernet dongle (was 0x8000) */
 
 #define FLAG_FRAMING_AX 0x0040		/* AX88772/178 packets */
 #define FLAG_WLAN	0x0080		/* use "wlan%d" names */
