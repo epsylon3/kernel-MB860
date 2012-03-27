@@ -27,14 +27,11 @@ unsigned int __machine_arch_type;
 #include <linux/linkage.h>
 
 #include <asm/unaligned.h>
+#include <mach/uncompress.h>
 
 #ifdef STANDALONE_DEBUG
-# define putstr printf
-#else
 
 static void putstr(const char *ptr);
-
-#include <mach/uncompress.h>
 
 #ifdef CONFIG_DEBUG_ICEDCC
 
@@ -102,6 +99,8 @@ static void icedcc_putc(int ch)
 #define putc(ch)	icedcc_putc(ch)
 #endif //CONFIG_DEBUG_ICEDCC
 
+#endif //STANDALONE_DEBUG
+
 static void putstr(const char *ptr)
 {
 	char c;
@@ -114,8 +113,6 @@ static void putstr(const char *ptr)
 
 	flush();
 }
-
-#endif //STANDALONE_DEBUG
 
 #define __ptr_t void *
 #define memzero(s,n) __memzero(s,n)

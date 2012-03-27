@@ -40,6 +40,7 @@
 #define DEBUG_UART_BASE NULL
 #endif
 
+#ifndef STANDALONE_DEBUG
 static void putc(int c)
 {
 	volatile u8 *uart = (volatile u8 *)DEBUG_UART_BASE;
@@ -52,6 +53,7 @@ static void putc(int c)
 		barrier();
 	uart[UART_TX << shift] = c;
 }
+#endif
 
 static inline void flush(void)
 {
