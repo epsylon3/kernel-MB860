@@ -96,7 +96,7 @@ $(GIT_HOOKS_DIR)/checkpatch.pl: $(KERNEL_SRC_DIR)/scripts/checkpatch.pl
 
 # Our custom defconfig
 ifeq ($(BLD_CONF),)
-BLD_CONF=tegra_olympus_cm9
+BLD_CONF=tegra_atrix_epsylon3_ics
 endif
 
 ifneq ($(BLD_CONF),)
