@@ -31,6 +31,7 @@
 #include <linux/platform_device.h>
 #include <asm/cacheflush.h>
 #include <mach/nvrm_linux.h>
+#include <mach/iomap.h>
 #include "nvcommon.h"
 #include "nvos.h"
 #include "nvcolor.h"
@@ -43,6 +44,17 @@
 #include <asm/bootinfo.h>
 #endif
 
+#define DISPLAY_BASE    (TEGRA_DISPLAY_BASE)
+//#define DISPLAY_BASE    (0x54200000)
+//#define DISPLAY_BASE    (TEGRA_DISPLAY2_BASE)
+
+#define ENABLE_HDMI 0
+
+#define LCD_WIDTH  540
+#define LCD_HEIGHT 960
+
+#define LCD_BYTES  2 /* 2 x 8 bits = 16bpp */
+
 static struct fb_info tegra_fb_info = {
 	.fix = {
 		.id		= "nvtegrafb",
@@ -51,18 +63,18 @@ static struct fb_info tegra_fb_info = {
 		.xpanstep	= 0,
 		.ypanstep	= 0,
 		.accel		= FB_ACCEL_NONE,
-		.line_length	= 800 * 2,
+		.line_length	= LCD_WIDTH * LCD_BYTES,
 	},
 
 	// these values are just defaults. they will be over-written with the
 	// correct values from the boot args.
 	.var = {
-		.xres		= 800,
-		.yres		= 480,
-		.xres_virtual	= 800,
-		.yres_virtual	= 480,
-		.bits_per_pixel	= 16,
-		.red		= {11, 5, 0},
+		.xres		= LCD_WIDTH,
+		.yres		= LCD_HEIGHT,
+		.xres_virtual	= LCD_WIDTH,
+		.yres_virtual	= LCD_HEIGHT,
+		.bits_per_pixel	= LCD_BYTES * 8,
+		.red		= {.offset=11, .length=5, .msb_right=0},
 		.green		= {5, 6, 0},
 		.blue		= {0, 5, 0},
 		.transp		= {0, 0, 0},
@@ -93,7 +105,6 @@ static NvBool tegra_fb_power_on( void );
 static void tegra_fb_trigger_frame( void );
 static void tegra_fb_power_off( void );
 
-#define DISPLAY_BASE    (0x54200000)
 #define REGW( reg, val ) \
 	do { \
 		writel( (val), s_fb_regs + (reg) ); \
@@ -256,6 +267,16 @@ static NvBool tegra_fb_power_on( void )
 		return NV_FALSE;
 	}
 
+#if ENABLE_HDMI
+	if( NvRmPowerVoltageControl( s_hRmGlobal,
+		NVRM_MODULE_ID( NvRmModuleID_Hdmi, 0 ),
+		s_power_id, NvRmVoltsUnspecified, NvRmVoltsUnspecified,
+		NULL, 0, NULL ) != NvSuccess )
+	{
+		printk( "nvtegrafb: unable to enable HDMI\n" );
+	}
+#endif
+
 	NvRmPowerModuleClockControl( s_hRmGlobal, NvRmModuleID_GraphicsHost,
 		s_power_id, NV_TRUE );
 
@@ -275,6 +296,13 @@ static void tegra_fb_power_off( void )
 		NVRM_MODULE_ID( NvRmModuleID_Display, 0 ),
 		s_power_id, NvRmVoltsOff, NvRmVoltsOff,
 		NULL, 0, NULL );
+
+#if ENABLE_HDMI
+	NvRmPowerVoltageControl( s_hRmGlobal,
+		NVRM_MODULE_ID( NvRmModuleID_Hdmi, 0 ),
+		s_power_id, NvRmVoltsOff, NvRmVoltsOff,
+		NULL, 0, NULL );
+#endif
 
 	NvRmPowerModuleClockControl( s_hRmGlobal, NvRmModuleID_GraphicsHost,
 		s_power_id, NV_FALSE );
@@ -365,14 +393,14 @@ static int tegra_plat_probe( struct platform_device *d )
 
 	e = NvOsBootArgGet(NvBootArgKey_Framebuffer, &boot_fb, sizeof(boot_fb));
 	if (e != NvSuccess || !boot_fb.MemHandleKey) {
-		printk("nvtegrafb: bootargs not found\n");
+		pr_warning("nvtegrafb: bootargs not found\n");
 		return -1;
 	}
 
 	e = NvRmMemHandleClaimPreservedHandle(s_hRmGlobal, boot_fb.MemHandleKey,
 		&s_fb_hMem );
 	if (e != NvSuccess) {
-		printk("nvtegrafb: Unable to query bootup framebuffer memory.\n");
+		pr_err("nvtegrafb: Unable to query bootup framebuffer memory.\n");
 		return -1;
 	}
 
@@ -403,13 +431,15 @@ static int tegra_plat_probe( struct platform_device *d )
 	tegra_fb_info.pseudo_palette = pseudo_palette;
 	tegra_fb_info.screen_base = ioremap_nocache(s_fb_addr, s_fb_size);
 
-	tegra_fb_info.var.xres = s_fb_width;
+	tegra_fb_info.var.xres = boot_fb.Width;
 	tegra_fb_info.var.yres = boot_fb.Height;
 	tegra_fb_info.var.xres_virtual = s_fb_width;
 	tegra_fb_info.var.yres_virtual = s_fb_height;
 
 	if (boot_fb.ColorFormat == NvColorFormat_A8R8G8B8)
 	{
+		pr_info("nvtegrafb: using %dx%d BGRA_8888 format\n",
+			boot_fb.Width, boot_fb.Height);
 		tegra_fb_info.var.bits_per_pixel = 32;
 		tegra_fb_info.var.transp.offset = 24;
 		tegra_fb_info.var.transp.length = 8;
@@ -419,9 +449,14 @@ static int tegra_plat_probe( struct platform_device *d )
 		tegra_fb_info.var.green.length = 8;
 		tegra_fb_info.var.blue.offset = 0;
 		tegra_fb_info.var.blue.length = 8;
+	} else {
+		tegra_fb_info.var.bits_per_pixel = s_fb_Bpp * 8;
+		pr_info("nvtegrafb: using %dx%d %dbpp format\n",
+			boot_fb.Width, boot_fb.Height, s_fb_Bpp * 8);
 	}
+
 	if( tegra_fb_info.screen_base == 0 ) {
-		printk("framebuffer map failure\n");
+		pr_err("nvtegrafb: framebuffer map failure\n");
 		NvRmMemHandleFree(s_fb_hMem);
 		s_fb_hMem = NULL;
 		return -1;
@@ -430,7 +465,7 @@ static int tegra_plat_probe( struct platform_device *d )
 		tegra_fb_info.fix.ypanstep = 1;
 	}
 
-	printk("nvtegrafb: base address: %x physical: %x\n",
+	pr_info("nvtegrafb: base address: %x physical: %x\n",
 		(unsigned int)tegra_fb_info.screen_base,
 		(unsigned int)s_fb_addr );
 
