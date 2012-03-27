@@ -1965,7 +1965,7 @@ static void get_memory_used(struct nvmap_file_priv *priv,
 	spin_unlock(&priv->ref_lock);
 #ifdef CONFIG_NVMAP_CARVEOUT_KILLER
 	NVMAP_TRACE(NVMAP_TRACE_OOM_KILLER,
-		"\n*** %s: pid=%d, oom_adj=%d, used_mem=%d, shared_mem=%d",
+		"*** %s: pid=%d, oom_adj=%d, used_mem=%d, shared_mem=%d\n",
 		__func__, task_tgid_vnr(priv->task), priv->task->signal->oom_adj,
 		*used_mem, *shared_mem);
 #endif
@@ -2043,11 +2043,11 @@ static bool carveout_out_of_memory(struct nvmap_carveout_node *node)
 
 	if (fatal_signal_pending(selected_task)) {
 		boost_dying_task_prio(selected_task);
-		pr_err("\ncarveout_killer: process pid=%d dying "
+		pr_err("carveout_killer: process pid=%d dying "
 			"slowly\n", task_tgid_vnr(selected_task));
 		goto out;
 	}
-	pr_err("\ncarveout_killer: killing process pid=%d with"
+	pr_err("carveout_killer: killing process pid=%d with"
 		" oom_adj %d to reclaim %d, current=%d\n",
 		task_tgid_vnr(selected_task), selected_oom_adj,
 		selected_size, task_tgid_vnr(current));
@@ -2080,7 +2080,7 @@ static bool free_space_available(struct nvmap_carveout_node *n, int free_size, i
 			ret = true;
 	}
 	NVMAP_TRACE(NVMAP_TRACE_OOM_KILLER,
-		"\n%s: %s, free_size=%d, size=%d, available_size=%d",
+		"%s: %s, free_size=%d, size=%d, available_size=%d\n",
 		__func__, ret ? "yes":"no",free_size, size, available_size);
 	if (oom_death_pending == NULL)
 		ret = true;
@@ -2099,7 +2099,7 @@ static int nvmap_release(struct inode *inode, struct file *filp)
 
 #ifdef CONFIG_NVMAP_CARVEOUT_KILLER
 	NVMAP_TRACE(NVMAP_TRACE_OOM_KILLER,
-		"\n%s: pid=%ld, org_pid=%d", __func__, sys_getpid(),
+		"%s: pid=%ld, org_pid=%d\n", __func__, sys_getpid(),
 		task_tgid_vnr(priv->task));
 #endif
 	if (!priv) return 0;
@@ -2136,7 +2136,7 @@ static int nvmap_open(struct inode *inode, struct file *filp)
 	struct nvmap_file_priv *priv;
 	int ret;
 
-	NVMAP_TRACE(NVMAP_TRACE_OOM_KILLER, "\n%s: pid=%ld",
+	NVMAP_TRACE(NVMAP_TRACE_OOM_KILLER, "%s: pid=%ld\n",
 		__func__, sys_getpid());
 	/* nvmap doesn't track total number of pinned references, so its
 	 * IOVMM client is always locked. */
@@ -2593,13 +2593,13 @@ no_space:
 	if (disable_co_killer == true)
 	{
 		NVMAP_TRACE(NVMAP_TRACE_OOM_KILLER,
-			"\n%s: Skipping killer upon request\n", __func__);
+			"%s: Skipping killer upon request\n", __func__);
 		goto out;
 	}
 
 	if ((jiffies_64 < get_jiffies_64()) && (retry_count <= 0)) {
-		pr_err("\n%s: timeout during carveout_out_of_memory, pid=%ld,"
-			" retry_count_remaining=%d", __func__, sys_getpid(), retry_count);
+		pr_err("%s: timeout during carveout_out_of_memory, pid=%ld,"
+			" retry_count_remaining=%d\n", __func__, sys_getpid(), retry_count);
 		goto out;
 	}
 	list_for_each_entry(n, &nvmap_context.heaps, heap_list) {
@@ -2612,12 +2612,12 @@ no_space:
 				free_space_available(n, free_space, h->size));
 			if (ret) {
 				NVMAP_TRACE(NVMAP_TRACE_OOM_KILLER,
-					"\n%s: wait_event_interruptible exited with error=%d, pid=%ld",
+					"%s: wait_event_interruptible exited with error=%d, pid=%ld\n",
 					__func__, ret, sys_getpid());
 				goto out;
 			}
 			NVMAP_TRACE(NVMAP_TRACE_OOM_KILLER,
-				"\n%s: retry allocationg carveout after oom", __func__);
+				"%s: retry allocationg carveout after oom\n", __func__);
 			retry_count--;
 			goto retry;
 		}
