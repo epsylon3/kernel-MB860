@@ -100,59 +100,48 @@ BLD_CONF=tegra_atrix_epsylon3_ics
 endif
 
 ifneq ($(BLD_CONF),)
-PRODUCT_SPECIFIC_DEFCONFIGS := $(DEFCONFIGSRC)/$(BLD_CONF)_defconfig
+    PRODUCT_SPECIFIC_DEFCONFIGS := $(DEFCONFIGSRC)/$(BLD_CONF)_defconfig
 endif
 
 ifneq ($(PRODUCT),)
-PRODUCT_SPECIFIC_DEFCONFIGS += \
-    ${LJAPDEFCONFIGSRC}/product/${PRODUCT}.config
+    PRODUCT_SPECIFIC_DEFCONFIGS += ${LJAPDEFCONFIGSRC}/product/${PRODUCT}.config
 endif
 
 #Turn on kernel engineering build as default when TARGET_BUILD_VARIANT is eng, to disable it, add ENG_BLD=0 in build command
 ifeq ($(TARGET_BUILD_VARIANT), user)
-ENG_BLD := 0
+    ENG_BLD := 0
 else
-ENG_BLD := 1
+    ENG_BLD := 1
 endif
 
-ifeq ($(ENG_BLD), 1)
-PRODUCT_SPECIFIC_DEFCONFIGS += \
-    ${LJAPDEFCONFIGSRC}/eng_bld.config
+ifeq ($(ENG_BLD),1)
+    PRODUCT_SPECIFIC_DEFCONFIGS += ${LJAPDEFCONFIGSRC}/eng_bld.config
 endif
 
-ifeq ($(TEST_DRV_CER), 1)
-        ifeq ($(TEST_COVERAGE),)
-                TEST_COVERAGE=1
-        endif
-
-        ifeq ($(TEST_KMEMLEAK),)
-                TEST_KMEMLEAK=1
-        endif
-
-        ifeq ($(TEST_FAULTINJECT),)
-                TEST_FAULTINJECT=1
-        endif
+ifeq ($(TEST_DRV_CER),1)
+    ifeq ($(TEST_COVERAGE),)
+            TEST_COVERAGE=1
+    endif
+    ifeq ($(TEST_KMEMLEAK),)
+            TEST_KMEMLEAK=1
+    endif
+    ifeq ($(TEST_FAULTINJECT),)
+            TEST_FAULTINJECT=1
+    endif
 endif
 
-# Option to enable or disable gcov
+# Optional features
 ifeq ($(TEST_COVERAGE),1)
-        PRODUCT_SPECIFIC_DEFCONFIGS += \
-			${LJAPDEFCONFIGSRC}/feature/coverage.config
+    PRODUCT_SPECIFIC_DEFCONFIGS += ${LJAPDEFCONFIGSRC}/feature/coverage.config
 endif
-
 ifeq ($(TEST_KMEMLEAK),1)
-        PRODUCT_SPECIFIC_DEFCONFIGS += \
-			${LJAPDEFCONFIGSRC}/feature/kmemleak.config
+    PRODUCT_SPECIFIC_DEFCONFIGS += ${LJAPDEFCONFIGSRC}/feature/kmemleak.config
 endif
-
 ifeq ($(TEST_FAULTINJECT),1)
-        PRODUCT_SPECIFIC_DEFCONFIGS += \
-			${LJAPDEFCONFIGSRC}/feature/faultinject.config
+    PRODUCT_SPECIFIC_DEFCONFIGS += ${LJAPDEFCONFIGSRC}/feature/faultinject.config
 endif
-
 ifeq ($(TEST_MUDFLAP),1)
-         PRODUCT_SPECIFIC_DEFCONFIGS += \
-            ${LJAPDEFCONFIGSRC}/feature/mudflap.config
+    PRODUCT_SPECIFIC_DEFCONFIGS += ${LJAPDEFCONFIGSRC}/feature/mudflap.config
 endif
 
 #
