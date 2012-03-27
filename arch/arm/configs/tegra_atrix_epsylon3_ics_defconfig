@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Linux kernel version: 2.6.32.59
-# Tue Mar 27 07:59:02 2012
+# Tue Mar 27 14:13:25 2012
 #
 CONFIG_ARM=y
 CONFIG_SYS_SUPPORTS_APM_EMULATION=y
@@ -2041,7 +2041,7 @@ CONFIG_FAT_DEFAULT_CODEPAGE=437
 CONFIG_FAT_DEFAULT_IOCHARSET="iso8859-1"
 CONFIG_NTFS_FS=y
 # CONFIG_NTFS_DEBUG is not set
-# CONFIG_NTFS_RW is not set
+CONFIG_NTFS_RW=y
 
 #
 # Pseudo filesystems
@@ -2352,7 +2352,7 @@ CONFIG_CRYPTO_TWOFISH_COMMON=y
 # Compression
 #
 CONFIG_CRYPTO_DEFLATE=y
-# CONFIG_CRYPTO_ZLIB is not set
+CONFIG_CRYPTO_ZLIB=y
 # CONFIG_CRYPTO_LZO is not set
 
 #
