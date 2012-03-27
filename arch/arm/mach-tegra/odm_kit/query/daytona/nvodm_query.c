@@ -942,7 +942,7 @@ NvU32 NvOdmQueryMemSize(NvOdmMemoryType MemType)
     NvOdmOsOsInfo Info;
     NvU32 SdramSize;
     NvU32 SdramBctCustOpt;
-    
+
     switch (MemType)
     {
         // NOTE:
@@ -976,7 +976,7 @@ NvU32 NvOdmQueryMemSize(NvOdmMemoryType MemType)
                     SdramSize = 0x20000000; //512 MB
                     break;
             }
-            
+
             if ( NvOdmOsGetOsInformation(&Info) &&
                  ((Info.OsType!=NvOdmOsOs_Windows) ||
                   (Info.OsType==NvOdmOsOs_Windows && Info.MajorVersion>=7)) )
@@ -985,7 +985,7 @@ NvU32 NvOdmQueryMemSize(NvOdmMemoryType MemType)
             // Legacy Physical Memory Manager: SdramSize MB - Carveout MB
             return (SdramSize - NvOdmQueryCarveoutSize());
         }
-        
+
         case NvOdmMemoryType_Nor:
             return 0x00400000;  // 4 MB
 
@@ -1019,10 +1019,20 @@ NvU32 NvOdmQueryCarveoutSize(void)
         case TEGRA_DEVKIT_BCT_CARVEOUT_0_MEMORY_7:
             return 0x01C00000;// 28MB
         case TEGRA_DEVKIT_BCT_CARVEOUT_0_MEMORY_8:
-            return 0x02000000; // 32 MB
+            return 0x02000000;// 32MB
+
+        case TEGRA_DEVKIT_BCT_CARVEOUT_0_MEMORY_48:
+            return 0x03000000;// 48MB
+        case TEGRA_DEVKIT_BCT_CARVEOUT_0_MEMORY_64:
+            return 0x04000000;// 64MB
+        case TEGRA_DEVKIT_BCT_CARVEOUT_0_MEMORY_80:
+            return 0x05000000;// 80MB
+        case TEGRA_DEVKIT_BCT_CARVEOUT_0_MEMORY_96:
+            return 0x06000000;// 96MB
+
         case TEGRA_DEVKIT_BCT_CARVEOUT_0_MEMORY_DEFAULT:
         default:
-            return 0x04000000; // 64 MB
+            return 0x04000000;// 64MB
     }
 }
 
