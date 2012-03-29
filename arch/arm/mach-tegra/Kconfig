@@ -66,6 +66,10 @@ config TEGRA_DEBUG_UARTE
 
 endchoice
 
+config MOT_SERIAL_JACK
+	bool
+	default n
+
 config TEGRA_NVOS
 	bool "Include Tegra NvOS interfaces"
 	default y
