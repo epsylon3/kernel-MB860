@@ -324,6 +324,10 @@ config APANIC_PLABEL
 	 If your platform uses a different flash partition label for storing
  	 crashdumps, enter it here.
 
+config APANIC_RAM
+	depends on (APANIC || APANIC_MMC)
+	default n
+
 config MDM_CTRL
 	bool "Modem control"
 	default n
