@@ -38,6 +38,21 @@ void __init tegra_init_idle(struct tegra_suspend_platform_data *plat);
 #define tegra_init_idle(plat) (0)
 #endif
 
+void tegra_move_framebuffer(unsigned long to, unsigned long from, unsigned long size);
+extern unsigned long tegra_bootloader_fb_start;
+extern unsigned long tegra_bootloader_fb_size;
+extern unsigned long tegra_fb_start;
+extern unsigned long tegra_fb_size;
+extern unsigned long tegra_fb2_start;
+extern unsigned long tegra_fb2_size;
+extern unsigned long tegra_carveout_start;
+extern unsigned long tegra_carveout_size;
+extern unsigned long tegra_lp0_vec_start;
+extern unsigned long tegra_lp0_vec_size;
+extern unsigned long tegra_grhost_aperture;
+
+void __init tegra_dump_reserved_memory(void);
+
 #ifdef CONFIG_CPU_FREQ
 int tegra_start_dvfsd(void);
 #else
@@ -52,4 +67,5 @@ bool tegra_chip_compare(u32 chip, u32 major_rev, u32 minor_rev);
 bool tegra_is_ap20_a03p(void);
 
 extern struct sys_timer tegra_timer;
+
 #endif

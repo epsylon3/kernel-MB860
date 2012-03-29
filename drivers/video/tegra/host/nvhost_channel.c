@@ -105,7 +105,7 @@ static inline void __iomem *channel_aperture(void __iomem *p, int ndx)
 }
 
 int __init nvhost_channel_init(struct nvhost_channel *ch,
-			struct nvhost_dev *dev, int index)
+			struct nvhost_master *dev, int index)
 {
 	BUILD_BUG_ON(NVHOST_NUMCHANNELS != ARRAY_SIZE(channelmap));
 

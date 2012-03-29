@@ -7,6 +7,8 @@ nvhost-objs = \
 	nvhost_intr.o \
 	nvhost_channel.o \
 	nvhost_3dctx.o \
-	nvhost_dev.o
+	nvhost_dev.o \
+	bus.o \
+
 
 obj-$(CONFIG_FB_TEGRA_GRHOST) += nvhost.o

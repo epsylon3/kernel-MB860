@@ -1,3 +1,12 @@
+config TEGRA_DC
+	tristate "Tegra Display Controller"
+	default y
+	depends on ARCH_TEGRA
+	select FB_MODE_HELPERS
+	select I2C
+	help
+	  Tegra display controller support.
+
 config FB_TEGRA
 	boolean "NVIDIA Tegra graphics support"
 	depends on FB && ARCH_TEGRA

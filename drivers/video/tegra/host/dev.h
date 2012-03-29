@@ -1,5 +1,5 @@
 /*
- * drivers/video/tegra/host/nvhost_dev.h
+ * drivers/video/tegra/host/dev.h
  *
  * Tegra Graphics Host Driver Entrypoint
  *
@@ -22,7 +22,6 @@
 
 #ifndef __NVHOST_DEV_H
 #define __NVHOST_DEV_H
-
 #include "nvhost_acm.h"
 #include "nvhost_syncpt.h"
 #include "nvhost_intr.h"
@@ -32,9 +31,7 @@
 
 #define NVHOST_MAJOR 0 /* dynamic */
 
-/* nvhost_dev is renamed nvhost_master in 2.6.36
-
-struct nvhost_dev {
+struct nvhost_master {
 	void __iomem *aperture;
 	void __iomem *sync_aperture;
 	struct resource *reg_mem;
@@ -43,28 +40,14 @@ struct nvhost_dev {
 	struct cdev cdev;
 	struct device *ctrl;
 	struct nvhost_syncpt syncpt;
+//	struct nvmap_client *nvmap;
 	struct nvhost_cpuaccess cpuaccess;
 	struct nvhost_intr intr;
 	struct nvhost_module mod;
 	struct nvhost_channel channels[NVHOST_NUMCHANNELS];
 };
 
-*/
-
-struct nvhost_master {
-        void __iomem *aperture;
-        void __iomem *sync_aperture;
-        struct resource *reg_mem;
-        struct platform_device *pdev;
-        struct class *nvhost_class;
-        struct cdev cdev;
-        struct device *ctrl;
-        struct nvhost_syncpt syncpt;
-//      struct nvmap_client *nvmap;
-        struct nvhost_cpuaccess cpuaccess;
-        struct nvhost_intr intr;
-        struct nvhost_module mod;
-        struct nvhost_channel channels[NVHOST_NUMCHANNELS];
-};
+void nvhost_debug_init(struct nvhost_master *master);
+void nvhost_debug_dump(void);
 
 #endif

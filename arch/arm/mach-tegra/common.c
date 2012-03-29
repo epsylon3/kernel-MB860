@@ -20,11 +20,14 @@
 #include <linux/init.h>
 #include <linux/io.h>
 #include <linux/cpu.h>
+#include <linux/highmem.h>
 #include <linux/nvmap.h>
 
 #include <asm/hardware/cache-l2x0.h>
 #include <asm/cacheflush.h>
 #include <asm/outercache.h>
+#include <asm/page.h>
+#include <asm/system.h>
 
 #include <mach/iomap.h>
 #include <mach/dma.h>
@@ -43,6 +46,18 @@
 #define FUSE_VISIBILITY_BIT_POS		28
 #define FUSE_SPARE_BIT_18_REG_OFFSET		0x248
 #define FUSE_SPARE_BIT_19_REG_OFFSET		0x24c
+
+unsigned long tegra_bootloader_fb_start=0;
+unsigned long tegra_bootloader_fb_size=0;
+unsigned long tegra_fb_start=0;
+unsigned long tegra_fb_size=0;
+unsigned long tegra_fb2_start=0;
+unsigned long tegra_fb2_size=0;
+unsigned long tegra_carveout_start=0;
+unsigned long tegra_carveout_size=0;
+unsigned long tegra_lp0_vec_start=0;
+unsigned long tegra_lp0_vec_size=0;
+unsigned long tegra_grhost_aperture=0;
 
 bool tegra_chip_compare(u32 chip, u32 major_rev, u32 minor_rev)
 {
@@ -149,4 +164,155 @@ void __init tegra_common_init(void)
 	tegra_dma_init();
 	tegra_mc_init();
 	arm_pm_restart = tegra_machine_restart;
+}
+
+static int __init tegra_bootloader_fb_arg(char *options)
+{
+	char *p = options;
+	tegra_bootloader_fb_size = memparse(p, &p);
+	if (*p == '@')
+		tegra_bootloader_fb_start = memparse(p+1, &p);
+	pr_info("Found tegra_fbmem: %08lx@%08lx\n",
+		tegra_bootloader_fb_size, tegra_bootloader_fb_start);
+	return 0;
+}
+early_param("tegra_fbmem", tegra_bootloader_fb_arg);
+
+static int __init tegra_lp0_vec_arg(char *options)
+{
+        char *p = options;
+ 
+        tegra_lp0_vec_size = memparse(p, &p);
+        if (*p == '@')
+                tegra_lp0_vec_start = memparse(p+1, &p);
+ 
+        return 0;
+}
+early_param("lp0_vec", tegra_lp0_vec_arg);
+/*
+ * Convert a page to/from a physical address
+ */
+#define phys_to_page(phys)  (pfn_to_page(__phys_to_pfn(phys)))
+
+/*
+ * Due to conflicting restrictions on the placement of the framebuffer,
+ * the bootloader is likely to leave the framebuffer pointed at a location
+ * in memory that is outside the grhost aperture.  This function will move
+ * the framebuffer contents from a physical address that is anywher (lowmem,
+ * highmem, or outside the memory map) to a physical address that is outside
+ * the memory map.
+ */
+void tegra_move_framebuffer(unsigned long to, unsigned long from,
+	unsigned long size)
+{
+	struct page *page;
+	void __iomem *to_io;
+	void *from_virt;
+	unsigned long i;
+	BUG_ON(PAGE_ALIGN((unsigned long)to) != (unsigned long)to);
+	BUG_ON(PAGE_ALIGN(from) != from);
+	BUG_ON(PAGE_ALIGN(size) != size);
+	to_io = ioremap(to, size);
+	if (!to_io) {
+		pr_err("%s: Failed to map target framebuffer\n", __func__);
+		return;
+	}
+	pr_info("%s: %08lx %08lx %08lx %p", __func__, to, from, size, to_io);
+	if (pfn_valid(page_to_pfn(phys_to_page(from)))) {
+		for (i = 0 ; i < size; i += PAGE_SIZE) {
+			page = phys_to_page(from + i);
+			from_virt = kmap(page);
+			memcpy_toio(to_io + i, from_virt, PAGE_SIZE);
+			kunmap(page);
+		}
+	} else {
+		void __iomem *from_io = ioremap(from, size);
+		if (!from_io) {
+			pr_err("%s: Failed to map source framebuffer\n",
+				__func__);
+			goto out;
+		}
+		for (i = 0; i < size; i+= 4)
+			writel(readl(from_io + i), to_io + i);
+		iounmap(from_io);
+	}
+out:
+	iounmap(to_io);
+}
+
+#ifdef CONFIG_HAVE_MEMBLOCK
+void __init tegra_reserve(unsigned long carveout_size, unsigned long fb_size,
+	unsigned long fb2_size)
+{
+	if (tegra_lp0_vec_size)
+		if (memblock_reserve(tegra_lp0_vec_start, tegra_lp0_vec_size))
+			pr_err("Failed to reserve lp0_vec %08lx@%08lx\n",
+				tegra_lp0_vec_size, tegra_lp0_vec_start);
+
+
+	tegra_carveout_start = memblock_end_of_DRAM() - carveout_size;
+	if (memblock_remove(tegra_carveout_start, carveout_size))
+		pr_err("Failed to remove carveout %08lx@%08lx from memory "
+			"map\n",
+			tegra_carveout_start, carveout_size);
+	else
+		tegra_carveout_size = carveout_size;
+
+	tegra_fb2_start = memblock_end_of_DRAM() - fb2_size;
+	if (memblock_remove(tegra_fb2_start, fb2_size))
+		pr_err("Failed to remove second framebuffer %08lx@%08lx from "
+			"memory map\n",
+			tegra_fb2_start, fb2_size);
+	else
+		tegra_fb2_size = fb2_size;
+
+	tegra_fb_start = memblock_end_of_DRAM() - fb_size;
+	if (memblock_remove(tegra_fb_start, fb_size))
+		pr_err("Failed to remove framebuffer %08lx@%08lx from memory "
+			"map\n",
+			tegra_fb_start, fb_size);
+	else
+		tegra_fb_size = fb_size;
+
+	if (tegra_fb_size)
+		tegra_grhost_aperture = tegra_fb_start;
+
+	if (tegra_fb2_size && tegra_fb2_start < tegra_grhost_aperture)
+		tegra_grhost_aperture = tegra_fb2_start;
+
+	if (tegra_carveout_size && tegra_carveout_start < tegra_grhost_aperture)
+		tegra_grhost_aperture = tegra_carveout_start;
+
+	/*
+	 * TODO: We should copy the bootloader's framebuffer to the framebuffer
+	 * allocated above, and then free this one.
+	 */
+	if (tegra_bootloader_fb_size)
+		if (memblock_reserve(tegra_bootloader_fb_start,
+				tegra_bootloader_fb_size))
+			pr_err("Failed to reserve lp0_vec %08lx@%08lx\n",
+				tegra_lp0_vec_size, tegra_lp0_vec_start);
+
+	tegra_dump_reserved_memory();
+}
+#endif
+
+void __init tegra_dump_reserved_memory(void)
+{
+	pr_info("Tegra reserved memory:\n"
+		"LP0:                    %08lx - %08lx\n"
+		"Bootloader framebuffer: %08lx - %08lx\n"
+		"Framebuffer:            %08lx - %08lx\n"
+		"2nd Framebuffer:         %08lx - %08lx\n"
+		"Carveout:               %08lx - %08lx\n",
+		tegra_lp0_vec_start,
+		tegra_lp0_vec_start + tegra_lp0_vec_size - 1,
+		tegra_bootloader_fb_start,
+		tegra_bootloader_fb_start + tegra_bootloader_fb_size - 1,
+		tegra_fb_start,
+		tegra_fb_start + tegra_fb_size - 1,
+		tegra_fb2_start,
+		tegra_fb2_start + tegra_fb2_size - 1,
+		tegra_carveout_start,
+		tegra_carveout_start + tegra_carveout_size - 1);
 }

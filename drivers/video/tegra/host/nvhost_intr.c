@@ -26,7 +26,7 @@
 #include <linux/slab.h>
 #include <linux/irq.h>
 
-#define intr_to_dev(x) container_of(x, struct nvhost_dev, intr)
+#define intr_to_dev(x) container_of(x, struct nvhost_master, intr)
 
 
 /*** HW host sync management ***/
@@ -289,7 +289,7 @@ static irqreturn_t syncpt_thresh_fn(int irq, void *dev_id)
 	unsigned int id = syncpt->id;
 	struct nvhost_intr *intr = container_of(syncpt, struct nvhost_intr,
 						syncpt[id]);
-	struct nvhost_dev *dev = intr_to_dev(intr);
+	struct nvhost_master *dev = intr_to_dev(intr);
 
 	(void)process_wait_list(syncpt,
 			nvhost_syncpt_update_min(&dev->syncpt, id),
@@ -526,7 +526,7 @@ void nvhost_intr_deinit(struct nvhost_intr *intr)
 
 void nvhost_intr_start(struct nvhost_intr *intr, u32 hz)
 {
-	struct nvhost_dev *dev = intr_to_dev(intr);
+	struct nvhost_master *dev = intr_to_dev(intr);
 	void __iomem *sync_regs = dev->sync_aperture;
 
 	mutex_lock(&intr->mutex);

@@ -407,7 +407,7 @@ static unsigned int wait_cdma(struct nvhost_cdma *cdma, enum cdma_event event)
 static void update_cdma(struct nvhost_cdma *cdma)
 {
 	bool signal = false;
-	struct nvhost_dev *dev = cdma_to_dev(cdma);
+	struct nvhost_master *dev = cdma_to_dev(cdma);
 
 	BUG_ON(!cdma->running);
 

@@ -10,6 +10,7 @@ obj-$(CONFIG_ARCH_TEGRA_2x_SOC)         += tegra2_clocks.o
 endif
 obj-y                                   += timer.o
 obj-y                                   += gpio.o
+obj-y                                   += kfuse.o
 obj-y					+= suspend.o
 obj-$(CONFIG_ARCH_TEGRA_2x_SOC)		+= suspend-t2.o
 obj-y					+= pinmux.o
@@ -59,4 +60,6 @@ obj-$(CONFIG_TEGRA_ODM_VIBRATE)		+= vibrate.o
 obj-$(CONFIG_TEGRA_AES_USER)		+= nvaes_user.o
 
 obj-$(CONFIG_INPUT_MOT_WEBTOP)          += aev.o evfwd.o
+
+obj-${CONFIG_MACH_MOT}			+= board-olympus-panel.o
 

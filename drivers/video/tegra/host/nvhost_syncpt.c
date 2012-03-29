@@ -23,11 +23,11 @@
 #include "nvhost_syncpt.h"
 #include "nvhost_dev.h"
 
-extern int nvhost_channel_fifo_debug(struct nvhost_dev *m);
-extern void nvhost_sync_reg_dump(struct nvhost_dev *m);
+extern int nvhost_channel_fifo_debug(struct nvhost_master *m);
+extern void nvhost_sync_reg_dump(struct nvhost_master *m);
 
 #define client_managed(id) (BIT(id) & NVSYNCPTS_CLIENT_MANAGED)
-#define syncpt_to_dev(sp) container_of(sp, struct nvhost_dev, syncpt)
+#define syncpt_to_dev(sp) container_of(sp, struct nvhost_master, syncpt)
 #define SYNCPT_CHECK_PERIOD 2*HZ
 
 static bool check_max(struct nvhost_syncpt *sp, u32 id, u32 real)
@@ -45,7 +45,7 @@ static bool check_max(struct nvhost_syncpt *sp, u32 id, u32 real)
  */
 static void reset_syncpt(struct nvhost_syncpt *sp, u32 id)
 {
-	struct nvhost_dev *dev = syncpt_to_dev(sp);
+	struct nvhost_master *dev = syncpt_to_dev(sp);
 	int min;
 	smp_rmb();
 	min = atomic_read(&sp->min_val[id]);
@@ -57,7 +57,7 @@ static void reset_syncpt(struct nvhost_syncpt *sp, u32 id)
  */
 static void reset_syncpt_wait_base(struct nvhost_syncpt *sp, u32 id)
 {
-	struct nvhost_dev *dev = syncpt_to_dev(sp);
+	struct nvhost_master *dev = syncpt_to_dev(sp);
 	writel(sp->base_val[id],
 		dev->sync_aperture + (HOST1X_SYNC_SYNCPT_BASE_0 + id * 4));
 }
@@ -67,7 +67,7 @@ static void reset_syncpt_wait_base(struct nvhost_syncpt *sp, u32 id)
  */
 static void read_syncpt_wait_base(struct nvhost_syncpt *sp, u32 id)
 {
-	struct nvhost_dev *dev = syncpt_to_dev(sp);
+	struct nvhost_master *dev = syncpt_to_dev(sp);
 	sp->base_val[id] = readl(dev->sync_aperture +
 				(HOST1X_SYNC_SYNCPT_BASE_0 + id * 4));
 }
@@ -108,7 +108,7 @@ void nvhost_syncpt_save(struct nvhost_syncpt *sp)
  */
 u32 nvhost_syncpt_update_min(struct nvhost_syncpt *sp, u32 id)
 {
-	struct nvhost_dev *dev = syncpt_to_dev(sp);
+	struct nvhost_master *dev = syncpt_to_dev(sp);
 	void __iomem *sync_regs = dev->sync_aperture;
 	u32 old, live, maxsp;
 
@@ -152,7 +152,7 @@ u32 nvhost_syncpt_read(struct nvhost_syncpt *sp, u32 id)
  */
 void nvhost_syncpt_cpu_incr(struct nvhost_syncpt *sp, u32 id)
 {
-	struct nvhost_dev *dev = syncpt_to_dev(sp);
+	struct nvhost_master *dev = syncpt_to_dev(sp);
 
         if (!client_managed(id) && nvhost_syncpt_min_eq_max(sp, id)) {
                 dev_err(&syncpt_to_dev(sp)->pdev->dev,
@@ -184,7 +184,7 @@ int nvhost_syncpt_wait_timeout(struct nvhost_syncpt *sp, u32 id,
 	DECLARE_WAIT_QUEUE_HEAD_ONSTACK(wq);
 	void *ref;
 	int err = 0;
-	//struct nvhost_dev *dev = syncpt_to_dev(sp);
+	//struct nvhost_master *dev = syncpt_to_dev(sp);
 
 	BUG_ON(!check_max(sp, id, thresh));
 

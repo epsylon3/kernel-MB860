@@ -62,7 +62,7 @@ struct nvhost_channel_userctx {
 };
 
 struct nvhost_ctrl_userctx {
-	struct nvhost_dev *dev;
+	struct nvhost_master *dev;
 	u32 mod_locks[NV_HOST1X_NB_MLOCKS];
 };
 
@@ -509,7 +509,7 @@ static int nvhost_ctrlrelease(struct inode *inode, struct file *filp)
 
 static int nvhost_ctrlopen(struct inode *inode, struct file *filp)
 {
-	struct nvhost_dev *host = container_of(inode->i_cdev, struct nvhost_dev, cdev);
+	struct nvhost_master *host = container_of(inode->i_cdev, struct nvhost_master, cdev);
 	struct nvhost_ctrl_userctx *priv;
 
 	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
@@ -680,7 +680,7 @@ static struct file_operations nvhost_ctrlops = {
 
 static void power_host(struct nvhost_module *mod, enum nvhost_power_action action)
 {
-	struct nvhost_dev *dev = container_of(mod, struct nvhost_dev, mod);
+	struct nvhost_master *dev = container_of(mod, struct nvhost_master, mod);
 
 	if (action == NVHOST_POWER_ACTION_ON) {
 		nvhost_intr_start(&dev->intr, clk_get_rate(mod->clk[0]));
@@ -697,7 +697,7 @@ static void power_host(struct nvhost_module *mod, enum nvhost_power_action actio
 	}
 }
 
-static int __init nvhost_user_init(struct nvhost_dev *host)
+static int __init nvhost_user_init(struct nvhost_master *host)
 {
 	int i, err, devno;
 
@@ -768,7 +768,7 @@ fail:
 
 static int __init nvhost_probe(struct platform_device *pdev)
 {
-	struct nvhost_dev *host;
+	struct nvhost_master *host;
 	struct resource *regs, *intr0, *intr1;
 	int i, err;
 
@@ -844,7 +844,7 @@ static int __exit nvhost_remove(struct platform_device *pdev)
 
 static int nvhost_suspend(struct platform_device *pdev, pm_message_t state)
 {
-	struct nvhost_dev *host = platform_get_drvdata(pdev);
+	struct nvhost_master *host = platform_get_drvdata(pdev);
 	dev_info(&pdev->dev, "suspending\n");
 	nvhost_module_suspend(&host->mod, true);
 	clk_enable(host->mod.clk[0]);
@@ -856,7 +856,7 @@ static int nvhost_suspend(struct platform_device *pdev, pm_message_t state)
 
 static int nvhost_resume(struct platform_device *pdev)
 {
-	struct nvhost_dev *host = platform_get_drvdata(pdev);
+	struct nvhost_master *host = platform_get_drvdata(pdev);
 	dev_info(&pdev->dev, "resuming\n");
 	clk_enable(host->mod.clk[0]);
 	nvhost_syncpt_reset(&host->syncpt);

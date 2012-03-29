@@ -136,7 +136,7 @@ static void debug_not_idle(struct nvhost_module *mod)
 {
 	int i;
 	bool lock_released = true;
-	struct nvhost_dev *dev = container_of(mod, struct nvhost_dev, mod);
+	struct nvhost_master *dev = container_of(mod, struct nvhost_master, mod);
 
 	for (i = 0; i < NVHOST_NUMCHANNELS; i++) {
 		struct nvhost_module *m = &dev->channels[i].mod;

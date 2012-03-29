@@ -8,9 +8,9 @@
 
 #include <asm/unaligned.h>
 
-#ifdef STANDALONE_DEBUG
-# define putstr printf
-#endif
+//#ifdef STANDALONE_DEBUG
+//# define putstr printf
+//#endif
 
 #include <mach/uncompress.h>
 

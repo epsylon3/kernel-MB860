@@ -158,7 +158,7 @@ static void nvhost_debug_handle_word(int *state, int *count,
 }
 
 
-int nvhost_channel_fifo_debug(struct nvhost_dev *m)
+int nvhost_channel_fifo_debug(struct nvhost_master *m)
 {
 	int i;
 
@@ -271,7 +271,7 @@ int nvhost_channel_fifo_debug(struct nvhost_dev *m)
 	return 0;
 }
 
-void nvhost_sync_reg_dump(struct nvhost_dev *m)
+void nvhost_sync_reg_dump(struct nvhost_master *m)
 {
 	int i;
 

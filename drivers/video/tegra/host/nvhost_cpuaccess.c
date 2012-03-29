@@ -24,7 +24,7 @@
 #include "nvhost_dev.h"
 #include <linux/string.h>
 
-#define cpuaccess_to_dev(ctx) container_of(ctx, struct nvhost_dev, cpuaccess)
+#define cpuaccess_to_dev(ctx) container_of(ctx, struct nvhost_master, cpuaccess)
 
 static const char *module_resource_names[NVHOST_MODULE_NUM] = {
 	"display",
@@ -81,7 +81,7 @@ void nvhost_cpuaccess_deinit(struct nvhost_cpuaccess *ctx)
 
 int nvhost_mutex_try_lock(struct nvhost_cpuaccess *ctx, unsigned int idx)
 {
-	struct nvhost_dev *dev = cpuaccess_to_dev(ctx);
+	struct nvhost_master *dev = cpuaccess_to_dev(ctx);
 	void __iomem *sync_regs = dev->sync_aperture;
 	u32 reg;
 
@@ -99,7 +99,7 @@ int nvhost_mutex_try_lock(struct nvhost_cpuaccess *ctx, unsigned int idx)
 
 void nvhost_mutex_unlock(struct nvhost_cpuaccess *ctx, unsigned int idx)
 {
-	struct nvhost_dev *dev = cpuaccess_to_dev(ctx);
+	struct nvhost_master *dev = cpuaccess_to_dev(ctx);
 	void __iomem *sync_regs = dev->sync_aperture;
 	writel(0, sync_regs + (HOST1X_SYNC_MLOCK_0 + idx * 4));
 	nvhost_module_idle(&dev->mod);
@@ -109,7 +109,7 @@ void nvhost_mutex_unlock(struct nvhost_cpuaccess *ctx, unsigned int idx)
 void nvhost_read_module_regs(struct nvhost_cpuaccess *ctx, u32 module,
 			u32 offset, size_t size, void *values)
 {
-	struct nvhost_dev *dev = cpuaccess_to_dev(ctx);
+	struct nvhost_master *dev = cpuaccess_to_dev(ctx);
 	void __iomem *p = ctx->regs[module] + offset;
 	u32* out = (u32*)values;
 	BUG_ON(size & 3);
@@ -126,7 +126,7 @@ void nvhost_read_module_regs(struct nvhost_cpuaccess *ctx, u32 module,
 void nvhost_write_module_regs(struct nvhost_cpuaccess *ctx, u32 module,
 			u32 offset, size_t size, const void *values)
 {
-	struct nvhost_dev *dev = cpuaccess_to_dev(ctx);
+	struct nvhost_master *dev = cpuaccess_to_dev(ctx);
 	void __iomem *p = ctx->regs[module] + offset;
 	const u32* in = (const u32*)values;
 	BUG_ON(size & 3);

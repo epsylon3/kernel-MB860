@@ -36,7 +36,7 @@
 #define NVHOST_MAX_GATHERS 512
 #define NVHOST_MAX_HANDLES 1280
 
-struct nvhost_dev;
+struct nvhost_master;
 
 struct nvhost_channeldesc {
 	const char *name;
@@ -53,7 +53,7 @@ struct nvhost_channel {
 	struct mutex reflock;
 	struct mutex submitlock;
 	void __iomem *aperture;
-	struct nvhost_dev *dev;
+	struct nvhost_master *dev;
 	const struct nvhost_channeldesc *desc;
 	struct nvhost_hwctx *cur_ctx;
 	u32 ctx_sw_count;
@@ -76,7 +76,7 @@ struct nvhost_cpuinterrupt {
 
 int nvhost_channel_init(
 	struct nvhost_channel *ch,
-	struct nvhost_dev *dev, int index);
+	struct nvhost_master *dev, int index);
 
 void nvhost_channel_submit(
 	struct nvhost_channel *ch,

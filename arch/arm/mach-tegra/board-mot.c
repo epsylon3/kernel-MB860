@@ -64,6 +64,7 @@
 #include "hwrev.h"
 
 #include "board-mot.h"
+#include "board-olympus.h"
 #include "nvrm_power.h"
 
 // override default moto kernel rule and bootloader console=null
@@ -778,6 +779,9 @@ static void __init tegra_mot_init(void)
 			// Olympus P3 and newer
 			config_unused_pins(oly_unused_pins_p3, ARRAY_SIZE(oly_unused_pins_p3));
 		}
+
+		// new nvhost interface (hdmi)
+		olympus_panel_init();
 	}
 
 	if (machine_is_etna())
