@@ -61,7 +61,7 @@
 
 #define HDMI_INPUT TEGRA_GPIO_PN7 // ok sure
 
-#define HDMI_5V_EN TEGRA_GPIO_PE3
+//#define HDMI_5V_EN TEGRA_GPIO_PE3 // no special bugs
 //#define HDMI_5V_EN TEGRA_GPIO_PF6 // reboot
 //#define HDMI_5V_EN TEGRA_GPIO_PV6 // break usb
 
@@ -69,27 +69,34 @@
 #define TEGRA_HDMI_BASE         0x54280000
 #define TEGRA_HDMI_SIZE         SZ_256K
 
+#define USE_LCD_FRAMEBUFFER
+
 /* Framebuffer(s) */
-#if 0
-static struct resource fb_resource[] = {
+#ifdef USE_LCD_FRAMEBUFFER
+static struct resource fb_lcd_resource[] = {
 	[0] = {
+		.name   = "irq",
 		.start  = INT_DISPLAY_GENERAL,
 		.end    = INT_DISPLAY_GENERAL,
 		.flags  = IORESOURCE_IRQ,
 	},
 	[1] = {
+		.name   = "regs",
 		.start	= TEGRA_DISPLAY_BASE,
 		.end	= TEGRA_DISPLAY_BASE + TEGRA_DISPLAY_SIZE-1,
 		.flags	= IORESOURCE_MEM,
 	},
 	[2] = {
-		.start	= 0x1c03a000,
-		.end	= 0x1c03a000 + 0x500000 - 1,
+		.name   = "fbmem",
+//		.start	= 0x1c03a000,
+//		.end	= 0x1c03a000 + 0x500000 - 1,
+		.start	= 0x1fddc000,
+		.end	= 0x1fddc000 + 0x500000 - 1,
 		.flags	= IORESOURCE_MEM,
 	},
 };
 
-static struct tegra_fb_lcd_data tegra_fb_lcd_platform_data = {
+static struct tegra_fb_lcd_data olympus_lcd_platform_data = {
 	.lcd_xres	= 540,
 	.lcd_yres	= 960,
 	.fb_xres	= 540,
@@ -97,13 +104,13 @@ static struct tegra_fb_lcd_data tegra_fb_lcd_platform_data = {
 	.bits_per_pixel	= 16,
 };
 
-static struct platform_device tegra_fb_device = {
+static struct platform_device olympus_fb_device = {
 	.name 		= "tegrafb",
 	.id		= 0,
-	.resource	= fb_resource,
-	.num_resources 	= ARRAY_SIZE(fb_resource),
+	.resource	= fb_lcd_resource,
+	.num_resources 	= ARRAY_SIZE(fb_lcd_resource),
 	.dev = {
-		.platform_data = &tegra_fb_lcd_platform_data,
+		.platform_data = &olympus_lcd_platform_data,
 	},
 };
 #endif
@@ -117,9 +124,12 @@ static int olympus_hdmi_init(void) {
 	gpio_direction_output(HDMI_5V_EN, 1);
 #endif
 
+#if 0
+// let gpios config handled by nvrm "hal"
 	tegra_gpio_enable(HDMI_INPUT);
 	gpio_request(HDMI_INPUT, "nvrm_gpio");
 	gpio_direction_input(HDMI_INPUT);
+#endif
 
 	return 0;
 }
@@ -303,10 +313,14 @@ int __init olympus_panel_init(void) {
 */
 	ret = nvhost_device_register(&olympus_disp_hdmi_device);
 
-	//ret = nvhost_device_register(&olympus_disp_lcd_device);
-	//return platform_device_register(&tegra_fb_device);
-
 	tegra_dump_reserved_memory();
+
+#ifdef USE_LCD_FRAMEBUFFER
+	//ret = nvhost_device_register(&olympus_disp_lcd_device);
+	//pr_info("nvhost_device_register fb0: ret=%d\n", ret);
+	ret = platform_device_register(&olympus_fb_device);
+	pr_info("platform_device_register fb0: ret=%d\n", ret);
+#endif
 
 	return ret;
 }
