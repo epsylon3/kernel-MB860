@@ -746,13 +746,15 @@ struct tegra_fb_info *tegra_fb_register(struct nvhost_device *ndev,
 	}
 
 	if (fb_mem) {
+		pr_info("%s: using dc fb_mem, phys=0x%x\n", __func__, fb_mem->start);
 		fb_size = resource_size(fb_mem);
 		fb_phys = fb_mem->start;
 		fb_base = ioremap_nocache(fb_phys, fb_size);
 	} else {
+		pr_warning("%s: using defaults, phys=0x%lx\n", __func__, s_fb_addr);
 		fb_size = s_fb_size;
 		fb_phys = s_fb_addr;
-		fb_base = ioremap_nocache(DISPLAY_BASE, 256 * 1024 );
+		fb_base = ioremap_nocache(DISPLAY_BASE, 256 * 1024);
 	}
 	if (!fb_base) {
 		dev_err(&ndev->dev, "fb can't be mapped phys=0x%lx iobase=0x%p size=%lu\n",
