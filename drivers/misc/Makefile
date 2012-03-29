@@ -29,6 +29,7 @@ obj-y				+= cb710/
 obj-$(CONFIG_LBEE9QMB_RFKILL)	+= lbee9qmb-rfkill.o
 obj-$(CONFIG_WL127X_RFKILL)	+= wl127x-rfkill.o
 obj-$(CONFIG_APANIC)		+= apanic.o
+obj-$(CONFIG_APANIC_RAM)	+= apanic_handle_ram.o apanic_report_ram.o
 obj-$(CONFIG_APANIC_MMC)	+= apanic_handle_mmc.o apanic_report_block.o
 obj-$(CONFIG_MOT_FEAT_TS27010MUX)	+= ts27010mux/
 obj-$(CONFIG_SENSORS_KXTF9)	+= kxtf9.o
