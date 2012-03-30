@@ -162,9 +162,12 @@ FORCE:
 #
 # make kernel configuration
 #--------------------------
+# We need to remove include/config if a make was run in kernel source tree
 CONFIG_OUT := $(KERNEL_BUILD_DIR)/.config
 kernel_config: $(CONFIG_OUT)
 $(CONFIG_OUT): $(TARGET_DEFCONFIG) $(KERNEL_FFLAG) inst_hook | $(KERNEL_BUILD_DIR)
+	@echo -e ${CL_PFX}"kernel_config"${CL_RST}
+	@rm -rf $(KERNEL_SRC_DIR)/include/config
 	@echo DEPMOD: $(DEPMOD)
 	$(MAKE) -j1 -C $(KERNEL_SRC_DIR) ARCH=arm $(KERN_FLAGS) \
 		CROSS_COMPILE=$(KERNEL_CROSS_COMPILE) \
@@ -203,7 +206,8 @@ endif
 # ========================================
 # We need to check warning no matter if build passed, failed or interuptted
 .PHONY: kernel
-kernel: $(CONFIG_OUT) | kernel_modules
+kernel: $(CONFIG_OUT)
+	@echo -e ${CL_PFX}"kernel"${CL_RST}
 	$(call kernel-check-gcc-warnings, $(KERNEL_ERR_LOG))
 	$(MAKE) -C $(KERNEL_SRC_DIR) ARCH=arm $(KERN_FLAGS) \
 		CROSS_COMPILE=$(KERNEL_CROSS_COMPILE) O=$(KERNEL_BUILD_DIR) \
@@ -216,6 +220,7 @@ kernel: $(CONFIG_OUT) | kernel_modules
 # We need to check warning no matter if build passed, failed or interuptted
 .PHONY: kernel_modules
 kernel_modules: $(CONFIG_OUT) | $(DEPMOD)
+	@echo -e ${CL_PFX}"kernel_modules"${CL_RST}
 	$(call kernel-check-gcc-warnings, $(KMOD_ERR_LOG))
 	$(MAKE) -C $(KERNEL_SRC_DIR) ARCH=arm $(KERN_FLAGS) \
 		CROSS_COMPILE=$(KERNEL_CROSS_COMPILE) O=$(KERNEL_BUILD_DIR) \
@@ -227,6 +232,7 @@ kernel_modules: $(CONFIG_OUT) | $(DEPMOD)
 # It is useful for build specific module with extra options
 # (e.g. TEST_DRV_CER)
 kernel_dir:
+	@echo -e ${CL_PFX}"kernel_dir"${CL_RST}
 	$(MAKE) -C $(KERNEL_SRC_DIR) ARCH=arm $(KERN_FLAGS) \
 		CROSS_COMPILE=$(KERNEL_CROSS_COMPILE) \
 		O=$(KERNEL_BUILD_DIR) $(DIR_TO_BLD)
@@ -234,6 +240,7 @@ kernel_dir:
 #NOTE: "strip" MUST be done for generated .ko files!!!
 .PHONY: kernel_modules_install
 kernel_modules_install: kernel_modules | $(DEPMOD)
+	@echo -e ${CL_PFX}"kernel_modules_install"${CL_RST}
 	$(MAKE) -C $(KERNEL_SRC_DIR) ARCH=arm $(KERN_FLAGS) \
 		CROSS_COMPILE=$(KERNEL_CROSS_COMPILE) \
 		O=$(KERNEL_BUILD_DIR) \
@@ -242,7 +249,9 @@ kernel_modules_install: kernel_modules | $(DEPMOD)
 		modules_install
 
 kernel_clean:
-	rm -f $(PRODUCT_OUT)/kernel
+	@echo -e ${CL_PFX}"kernel_clean"${CL_RST}
+	@rm -f $(PRODUCT_OUT)/kernel_post_install
+	@rm -f $(PRODUCT_OUT)/kernel
 	@rm -f $(PRODUCT_OUT)/boot.img
 	@rm -f $(PRODUCT_OUT)/recovery.img
 	$(MAKE) -C $(KERNEL_SRC_DIR) ARCH=arm $(KERN_FLAGS) \
@@ -282,7 +291,9 @@ API_MAKE = make PREFIX=$(KERNEL_BUILD_DIR) \
 		LINUXSRCDIR=$(KERNEL_SRC_DIR) \
 		LINUXBUILDDIR=$(KERNEL_BUILD_DIR) \
 
+.PHONY: wlan_dhd
 wlan_dhd: $(CONFIG_OUT)
+	@echo -e ${CL_PFX}"wlan_dhd"${CL_RST}
 	$(API_MAKE) -C $(WLAN_DHD_PATH)
 
 wlan_dhd_clean:
@@ -296,6 +307,7 @@ $(TARGET_PREBUILT_KERNEL): kernel
 ifneq ($(DO_NOT_REBUILD_THE_KERNEL),1)
 .PHONY: $(TARGET_PREBUILT_KERNEL)
 device/motorola/olympus/kernel: $(TARGET_PREBUILT_KERNEL) kernel ext_kernel_modules kernel_modules_install
+	@echo -e ${CL_PFX}"Install kernel and modules..."${CL_RST}
 	mkdir -p $(MOTO_MOD_INSTALL)
 	cp $(KERNEL_BUILD_DIR)/arch/arm/boot/zImage $(ANDROID_BUILD_TOP)/device/motorola/olympus/kernel
 	rm -f $(ANDROID_BUILD_TOP)/device/motorola/olympus/modules/*.ko
@@ -314,6 +326,5 @@ $(INSTALLED_KERNEL_TARGET): $(TARGET_PREBUILT_KERNEL) | $(ACP)
 endif
 
 ROOTDIR :=
-
 
 endif # tegra
