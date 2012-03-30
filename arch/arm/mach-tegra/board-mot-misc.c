@@ -154,6 +154,9 @@ void mot_set_hsj_mux(short hsj_mux_gpio)
 		printk("\n%s: gpio_request error gpio %d  \n",
 				__FUNCTION__,TEGRA_GPIO_PM2);
 	else {
+#ifdef CONFIG_MOT_SERIAL_JACK
+		hsj_mux_gpio = 0;
+#endif
 		pr_info("%s: GPIO PM2 config set to %s\n", __func__,
 			hsj_mux_gpio ? "audio":"uart");
 		gpio_direction_output(TEGRA_GPIO_PM2, hsj_mux_gpio);
