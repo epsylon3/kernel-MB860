@@ -28,7 +28,7 @@
 #include "board.h"
 #include "gpio-names.h"
 
-/* to clean later : */
+/* to clean later : to check use NvRmPhysicalMemMap() ? */
 #include <mach/nvrm_linux.h>
 #include "nvcommon.h"
 #include "nvos.h"
@@ -47,7 +47,7 @@
  gpio-46  (nvrm_gpio       PF6 ) out hi
  gpio-47  (nvrm_gpio       PF7 ) out hi key_backlight_en
  gpio-111 (nvrm_gpio       PN7 ) in  hi irq-303 (default) << IRQ HDMI IN
- gpio-174 (nvrm_gpio       PV6 ) out hi usb ?
+ gpio-174 (nvrm_gpio       PV6 ) out hi usb_data_en
 
  HDMI plugged screens off :
  gpio-25  (nvrm_gpio           ) in  hi irq-217 (default)
@@ -59,15 +59,11 @@
 */
 #define olympus_backlight_en TEGRA_GPIO_PE0
 
-#define HDMI_INPUT TEGRA_GPIO_PN7 // ok sure
+#define HDMI_INPUT TEGRA_GPIO_PN7
+#define USE_HDMI_GPIO_HOTPLUG 0 // but disabled, create logcat errors without nvrm
 
-//#define HDMI_5V_EN TEGRA_GPIO_PE3 // no special bugs
+//#define HDMI_5V_EN TEGRA_GPIO_PE3 // no special bugs but nvrm or odm required NvOdmGpioOpen();
 //#define HDMI_5V_EN TEGRA_GPIO_PF6 // reboot
-//#define HDMI_5V_EN TEGRA_GPIO_PV6 // break usb
-
-//to put in iomap.h
-#define TEGRA_HDMI_BASE         0x54280000
-#define TEGRA_HDMI_SIZE         SZ_256K
 
 #define USE_LCD_FRAMEBUFFER
 
@@ -89,9 +85,9 @@ static struct resource fb_lcd_resource[] = {
 	[2] = {
 		.name   = "fbmem",
 //		.start	= 0x1c03a000,
-//		.end	= 0x1c03a000 + 0x500000 - 1,
+//		.end	= 0x1c03a000 + 0x200000 - 1,
 		.start	= 0x1fddc000,
-		.end	= 0x1fddc000 + 0x500000 - 1,
+		.end	= 0x1fddc000 + 0x200000 - 1,
 		.flags	= IORESOURCE_MEM,
 	},
 };
@@ -115,7 +111,8 @@ static struct platform_device olympus_fb_device = {
 };
 #endif
 
-/* HDMI nvhost framebuffer device */
+/* HDMI nvhost framebuffer device 
+	NvRmGpioOpen ? */
 static int olympus_hdmi_init(void) {
 
 #ifdef HDMI_5V_EN
@@ -124,7 +121,7 @@ static int olympus_hdmi_init(void) {
 	gpio_direction_output(HDMI_5V_EN, 1);
 #endif
 
-#if 0
+#if USE_HDMI_GPIO_HOTPLUG
 // let gpios config handled by nvrm "hal"
 	tegra_gpio_enable(HDMI_INPUT);
 	gpio_request(HDMI_INPUT, "nvrm_gpio");
@@ -191,9 +188,11 @@ static struct tegra_dc_mode ventana_panel_modes[] = {
 
 static struct tegra_dc_out olympus_disp_hdmi_out = {
 	.type = TEGRA_DC_OUT_HDMI,
-	.flags = TEGRA_DC_OUT_HOTPLUG_HIGH,
 	.dcc_bus = 1,
+#if USE_HDMI_GPIO_HOTPLUG
+	.flags = TEGRA_DC_OUT_HOTPLUG_HIGH,
 	.hotplug_gpio = HDMI_INPUT,
+#endif
 	.align = TEGRA_DC_ALIGN_MSB,
 	.order = TEGRA_DC_ORDER_RED_BLUE,
 
@@ -255,6 +254,9 @@ int __init olympus_panel_init(void) {
 
 	NvError e;
 	NvBootArgsFramebuffer boot_fb;
+	NvBootArgsWarmboot boot_mem;
+	NvBootArgsPreservedMemHandle zone;
+	int z;
 	NvRmMemHandle fb_hMem;
 
 	olympus_hdmi_init();
@@ -267,17 +269,28 @@ int __init olympus_panel_init(void) {
 		tegra_bootloader_fb_size  = boot_fb.Size; //~2MB
 		pr_info("%s: %dx%d with %d surfaces\n", __func__, boot_fb.Width, 
 		        boot_fb.Height, boot_fb.NumSurfaces);
-
-//		tegra_bootloader_fb_start = (unsigned long) NvRmMemGetAddress(boot_fb.MemHandleKey, 0);
-
+/**/
 		e = NvRmMemHandleClaimPreservedHandle(s_hRmGlobal, boot_fb.MemHandleKey,
 			&fb_hMem );
 		if (e != NvSuccess) {
 			pr_err("%s: Unable to query bootup framebuffer memory.\n", __func__);
 		}
-		else
+		else {
+	//		tegra_bootloader_fb_start = (unsigned long) NvRmMemGetAddress(boot_fb.MemHandleKey, 0);
 			tegra_bootloader_fb_start = NvRmMemPin(fb_hMem);
+		}
+	}
 /**/
+	e = NvOsBootArgGet(NvBootArgKey_WarmBoot, &boot_mem, sizeof(boot_mem));
+	if (e != NvSuccess || !boot_mem.MemHandleKey) {
+		pr_warning("%s: Warm boot memory zones not found\n", __func__);
+	} else {
+		for (z=0; z < NV_BOOTARGS_MAX_PRESERVED_MEMHANDLES; z++) {
+			e = NvOsBootArgGet(z + NvBootArgKey_PreservedMemHandle_0, &zone, sizeof(zone));
+			if (e == NvSuccess && zone.Address) {
+				pr_info("warmboot preserved zone %d: addr=0x%x size=0x%x\n", z, zone.Address, zone.Size);
+			}
+		}
 	}
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
@@ -299,7 +312,7 @@ int __init olympus_panel_init(void) {
 		tegra_fb2_start = res->start;
 		tegra_fb2_size = res->end - res->start;
 	}
-	pr_warning("%s: start=0x%x end=%x\n", __func__, res->start, res->end);
+	pr_warning("%s: fb hdmi start=0x%x end=%x\n", __func__, res->start, res->end);
 
 /*	if (tegra_fb2_size == 0xFFFFFFFF) {
 		tegra_fb2_start = tegra_fb_start + 0x400000;

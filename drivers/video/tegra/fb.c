@@ -667,10 +667,11 @@ struct tegra_fb_info *tegra_fb_register(struct nvhost_device *ndev,
 	unsigned long fb_size = 0;
 	unsigned long fb_phys = 0;
 	int ret = 0;
+	NvError e;
 
 	pr_notice("%s: dc=%p, fb_data=%p, fb_mem=%p\n", __func__, dc, fb_data, fb_mem);
+
 #ifdef CONFIG_MACH_MOT
-	NvError e;
 	NvBootArgsFramebuffer boot_fb;
 
 	e = NvOsBootArgGet(NvBootArgKey_Framebuffer, &boot_fb, sizeof(boot_fb));
@@ -688,23 +689,24 @@ struct tegra_fb_info *tegra_fb_register(struct nvhost_device *ndev,
 		goto err;
 	}
 
-
 	s_fb_width = boot_fb.Width;
 	s_fb_height = boot_fb.Height * boot_fb.NumSurfaces;
 	s_fb_size = boot_fb.Size;
 	s_fb_addr = NvRmMemPin(s_fb_hMem);
 	s_fb_Bpp = NV_COLOR_GET_BPP(boot_fb.ColorFormat) >> 3;
 #endif
+
 	tegra_fb_power_register();
 
-	s_fb_regs = ioremap_nocache( DISPLAY_BASE, 256 * 1024 );
+	s_fb_regs = ioremap_nocache(DISPLAY_BASE, 256 * 1024);
 
-
+#ifdef CONFIG_MACH_MOT
 	// need to poke a trigger register if the tearing effect signal is used
 	if( boot_fb.Flags & NVBOOTARG_FB_FLAG_TEARING_EFFECT )
 	{
 		s_use_tearing_effect = 1;
 	}
+#endif
 
 	win = tegra_dc_get_window(dc, fb_data->win);
 	if (!win) {

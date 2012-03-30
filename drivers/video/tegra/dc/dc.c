@@ -48,6 +48,20 @@
 		(bit) = find_next_bit((addr), (size), (bit) + 1))
 #endif
 
+/* to clean later, for NVRM */
+#include <mach/nvrm_linux.h>
+#include "nvcommon.h"
+#include "nvos.h"
+#include "nvcolor.h"
+#include "nvbootargs.h"
+#include "nvrm_module.h"
+#include "nvrm_memmgr.h"
+#include "nvrm_power.h"
+#include "nvrm_ioctls.h"
+#include "nvrm_hardware_access.h"
+
+static NvRmMemHandle s_fb_hMem = NULL;
+
 static int no_vsync;
 
 module_param_named(no_vsync, no_vsync, int, S_IRUGO | S_IWUSR);
@@ -1173,6 +1187,91 @@ static void tegra_dc_reset_worker(struct work_struct *work)
 	mutex_unlock(&dc->lock);
 }
 
+/* NVRM boot fbmem */
+int NVRM_request_fbmem_region(struct resource *res_fbmem) {
+	NvError e = NvSuccess;
+	NvRmMemHandle hMem = NULL;
+	unsigned long pa_addr = 0;
+
+	NvBootArgsFramebuffer boot_fb;
+
+	/* Get once the bootloader framebuffer memory */
+	if (s_fb_hMem != NULL) {
+		pr_err("%s: boot fbmem already requested\n", __func__);
+		return -1;
+	}
+
+	NvOsBootArgGet(NvBootArgKey_Framebuffer, &boot_fb, sizeof(boot_fb));
+	if (e != NvSuccess || !boot_fb.MemHandleKey) {
+		pr_err("%s: bootargs not found\n", __func__);
+		return -1;
+	}
+
+	NV_CHECK_ERROR_CLEANUP(
+		NvRmMemHandleClaimPreservedHandle(s_hRmGlobal, boot_fb.MemHandleKey, &hMem));
+	s_fb_hMem = hMem;
+
+	pa_addr = NvRmMemPin(s_fb_hMem);
+	if (pa_addr == 0) {
+		return -1;
+	}
+	pr_info("%s: NvRmMemPin pa_addr=%lx\n", __func__, (unsigned long) pa_addr);
+	res_fbmem->start = pa_addr;
+	res_fbmem->end = pa_addr + boot_fb.Size - 1;
+
+fail: /* NV_CHECK_ERROR_CLEANUP return's */
+	pr_err("%s: ERR %d\n", __func__, e);
+	return -1;
+}
+
+/* NVRM Interface */
+void* NVRM_request_regs_region(unsigned long start, unsigned long size, const char* name) {
+	NvError e = NvSuccess;
+	NvU32 Size = (NvU32) size;
+	//NvRmPhysAddr Start = start;
+	//NvU8 *pVirtAddr = NULL;
+
+	NvRmDeviceHandle hDevice = 0; //s_hRmGlobal fails.. (reboot)
+	NvRmMemHandle hMem = NULL;
+	NvRmHeap h = NvRmHeap_External; // or NvRmHeap_GART
+	unsigned long pa_addr;
+
+	pr_info("%s: s_hRmGlobal=%lx\n", __func__, (unsigned long) s_hRmGlobal);
+	NV_CHECK_ERROR_CLEANUP(
+		NvRmMemHandleCreate(hDevice, &hMem, Size));
+	pr_info("%s: hNewMemHandle=%lx\n", __func__, (unsigned long) hMem);
+
+	NV_CHECK_ERROR_CLEANUP(
+		NvRmMemAlloc(hMem, &h, 1, PAGE_SIZE, NvOsMemAttribute_Uncached));
+	pr_info("%s: NvRmMemAlloc done\n", __func__);
+
+	pa_addr = NvRmMemPin(hMem);
+	if (pa_addr == 0)
+		return (void*) 0;
+	pr_info("%s: NvRmMemPin pa_addr=%lx\n", __func__, (unsigned long) pa_addr);
+/*
+	Start = pa_addr;
+	NV_CHECK_ERROR_CLEANUP(NvRmPhysicalMemMap(Start, Size,
+		NVOS_MEM_READ_WRITE, NvOsMemAttribute_Uncached, (void **)&pVirtAddr));
+	pr_info("%s: NvRmPhysicalMemMap %lx=>%lx\n", __func__, start, (unsigned long) pVirtAddr);
+	return (void*) pVirtAddr;
+*/
+	return (void*) pa_addr;
+
+fail: /* NV_CHECK_ERROR_CLEANUP return's */
+	pr_err("%s: ERR %d\n", __func__, e);
+	if (hMem != NULL)
+		NvRmMemHandleFree(hMem);
+	return (void*) 0;
+}
+
+void NVRM_release_mem_region(void) {
+	if (s_fb_hMem != NULL) {
+		NvRmMemUnpin(s_fb_hMem);
+		s_fb_hMem = NULL;
+	}
+	//NvRmMemHandleFree(hMemHandle);
+}
 
 static int tegra_dc_probe(struct nvhost_device *ndev)
 {
@@ -1214,16 +1313,14 @@ static int tegra_dc_probe(struct nvhost_device *ndev)
 		ret = -ENOENT;
 		goto err_free;
 	}
-
-	// to check...
-	// base_res = (void __iomem *) NvRmMemGetAddress(boot_fb.MemHandleKey, 0);
+	// to check... NvRmPhysicalMemMap
 
 	pr_info("%s: request_mem_region 0x%x size %u\n", __func__, res->start, (u32)resource_size(res));
-	base_res = request_mem_region(res->start, resource_size(res), ndev->name);
+	base_res = request_mem_region(res->start, resource_size(res), "tegra_grhost");
 	if (!base_res) {
 		dev_err(&ndev->dev, "request_mem_region failed\n");
 		ret = -EBUSY;
-		goto err_free;
+		goto err_free; //... to check
 	}
 
 	base = ioremap(res->start, resource_size(res));
@@ -1234,6 +1331,12 @@ static int tegra_dc_probe(struct nvhost_device *ndev)
 	}
 
 	fb_mem = nvhost_get_resource_byname(ndev, IORESOURCE_MEM, "fbmem");
+	if (ndev->id == 1) {
+		if (fb_mem) {
+			NVRM_request_fbmem_region(fb_mem);
+		}
+	}
+	pr_info("%s: nvhost_get_resource_byname fbmem(%d) -> 0x%Zx-0x%Zx\n", __func__, ndev->id, fb_mem->start, fb_mem->end);
 
 	clk = clk_get(&ndev->dev, NULL);
 	if (IS_ERR_OR_NULL(clk)) {
@@ -1345,6 +1448,8 @@ err_release_resource_reg:
 	release_resource(base_res);
 err_free:
 	kfree(dc);
+
+	NVRM_release_mem_region();
 
 	return ret;
 }
