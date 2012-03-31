@@ -57,9 +57,9 @@
 
 struct apanic_data {
 	struct apanic_mmc_platform_data	*dev;
-	void				*bounce;
-	struct proc_dir_entry		*proc_annotate;
-	char				*annotation;
+	void  *bounce;
+	struct proc_dir_entry *proc_annotate;
+	char  *annotation;
 };
 
 static struct apanic_data drv_ctx;
@@ -144,7 +144,7 @@ static int apanic_mmc(struct notifier_block *this, unsigned long event,
 		goto out;
 
 	if (mmc_simple_init(ctx->dev->id,
-	                    ctx->dev->start_sector,
+			    ctx->dev->start_sector,
 			    ctx->dev->sectors,
 			    ctx->dev->sector_size)) {
 		printk(KERN_ERR DRVNAME "unable to initialize MMC device\n");
@@ -327,21 +327,26 @@ static struct notifier_block panic_blk = {
 	.notifier_call	= apanic_mmc,
 };
 
+#ifdef CONFIG_DEBUG_FS
 static int panic_dbg_get(void *data, u64 *val)
 {
 	printk(KERN_EMERG "*** kernel console dumped via debugfs ***\n");
-	apanic_mmc(NULL, 0, NULL);
+
+	//break the system
+	//apanic_mmc(NULL, 0, NULL);
+
+	pr_info("%s: data=%p, val=%p, in_panic=%d, did_panic=%d\n", __func__,
+			data, val, in_panic, did_panic);
 	return 0;
 }
-
 static int panic_dbg_set(void *data, u64 val)
 {
 	printk(KERN_EMERG "*** PANIC FORCED via debugfs ***\n");
 	BUG();
 	return -1;
 }
-
 DEFINE_SIMPLE_ATTRIBUTE(panic_dbg_fops, panic_dbg_get, panic_dbg_set, "%llu\n");
+#endif
 
 static int apanic_handle_mmc_probe(struct platform_device *pdev)
 {
