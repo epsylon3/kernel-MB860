@@ -95,7 +95,7 @@ static int __init ab3100_otp_read(struct ab3100_otp *otp)
  * This is a simple debugfs human-readable file that dumps out
  * the contents of the OTP.
  */
-#ifdef CONFIG_DEBUGFS
+#ifdef CONFIG_DEBUG_FS
 static int show_otp(struct seq_file *s, void *v)
 {
 	struct ab3100_otp *otp = s->private;
