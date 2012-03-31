@@ -137,17 +137,18 @@ int apanic_mmc_init(void)
 		for (i = 0; i < tegra_nand_plat.nr_parts; i++) {
 			if (strcmp(CONFIG_APANIC_PLABEL, tegra_nand_plat.parts[i].name))
 				continue;
+
 			apanic_mmc_platform_data.sector_size = 512;  /* fixme */
 			apanic_mmc_platform_data.start_sector =
 					tegra_nand_plat.parts[i].offset / 512;
 			apanic_mmc_platform_data.sectors =
 					tegra_nand_plat.parts[i].size / 512;
+			pr_info("%s: offset=0x%llx sector=%llu\n", __func__, tegra_nand_plat.parts[i].offset,
+				apanic_mmc_platform_data.start_sector);
 			break;
 		}
-
 		result = platform_device_register(&apanic_handle_mmc_platform_device);
 	}
-
 	return result;
 }
 #endif
@@ -157,8 +158,7 @@ void mot_set_hsj_mux(short hsj_mux_gpio)
 	/* set pin M 2 to 1 to route audio onto headset or 0 to route console uart */
 
 	if( gpio_request(TEGRA_GPIO_PM2, "hs_detect_enable") < 0 )
-  		printk("\n%s: gpio_request error gpio %d  \n", 
-				__FUNCTION__,TEGRA_GPIO_PM2);
+		pr_err("%s: gpio request error PM2(%d)\n", __func__, TEGRA_GPIO_PM2);
 	else {
 		gpio_direction_output(TEGRA_GPIO_PM2, hsj_mux_gpio);
 	}
