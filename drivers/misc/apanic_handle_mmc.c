@@ -328,24 +328,43 @@ static struct notifier_block panic_blk = {
 };
 
 #ifdef CONFIG_DEBUG_FS
-static int panic_dbg_get(void *data, u64 *val)
+static int apanic_dbg_get(void *data, u64 *val)
 {
 	printk(KERN_EMERG "*** kernel console dumped via debugfs ***\n");
 
 	//break the system
 	//apanic_mmc(NULL, 0, NULL);
+	*val = did_panic;
 
 	pr_info("%s: data=%p, val=%p, in_panic=%d, did_panic=%d\n", __func__,
 			data, val, in_panic, did_panic);
 	return 0;
 }
-static int panic_dbg_set(void *data, u64 val)
+static int apanic_dbg_set(void *data, u64 val)
 {
 	printk(KERN_EMERG "*** PANIC FORCED via debugfs ***\n");
 	BUG();
 	return -1;
 }
-DEFINE_SIMPLE_ATTRIBUTE(panic_dbg_fops, panic_dbg_get, panic_dbg_set, "%llu\n");
+DEFINE_SIMPLE_ATTRIBUTE(apanic_dbg_fops, apanic_dbg_get, apanic_dbg_set, "%llu\n");
+
+static int apanic_dbg_sector_get(void *data, u64 *val)
+{
+	struct apanic_data *ctx = &drv_ctx;
+	struct apanic_mmc_platform_data *pdata = ctx->dev;
+	*val = pdata->start_sector;
+	printk(KERN_DEBUG "%s: sector: 0x%llx (%llu)\n", __func__, pdata->start_sector, pdata->start_sector);
+	return 0;
+}
+static int apanic_dbg_sector_set(void *data, u64 val)
+{
+        struct apanic_data *ctx = &drv_ctx;
+        struct apanic_mmc_platform_data *pdata = ctx->dev;
+        pdata->start_sector = val;
+        printk(KERN_DEBUG "%s: set sector to 0x%llx (%llu)\n", __func__, pdata->start_sector, pdata->start_sector);
+        return 0;
+}
+DEFINE_SIMPLE_ATTRIBUTE(apanic_dbg_sector_fops, apanic_dbg_sector_get, apanic_dbg_sector_set, "%llu\n");
 #endif
 
 static int apanic_handle_mmc_probe(struct platform_device *pdev)
@@ -362,8 +381,8 @@ static int apanic_handle_mmc_probe(struct platform_device *pdev)
 	}
 
 	ctx->dev = pdata;
-	printk(KERN_INFO DRVNAME "on host %d at 0x%llX of size %llu with %u "
-	       "byte sectors\n", pdata->id, pdata->start_sector,
+	printk(KERN_INFO DRVNAME "on host %d at 0x%llX of size %llu with %u-"
+	       "bytes sectors\n", pdata->id, pdata->start_sector,
 	                         pdata->sectors, pdata->sector_size);
 
 	/* FIXME: this should be sysfs */
@@ -397,7 +416,8 @@ int __init apanic_handle_mmc_init(void)
 	result = platform_driver_register(&apanic_handle_mmc_driver);
 	if (result == 0) {
 		atomic_notifier_chain_register(&panic_notifier_list, &panic_blk);
-		debugfs_create_file("apanic", 0644, NULL, NULL, &panic_dbg_fops);
+		debugfs_create_file("apanic", 0644, NULL, NULL, &apanic_dbg_fops);
+		debugfs_create_file("apanic_sector", 0644, NULL, NULL, &apanic_dbg_sector_fops);
 		drv_ctx.bounce = (void *) __get_free_page(GFP_KERNEL);
 		printk(KERN_INFO DRVNAME "kernel panic handler initialized\n");
 	}
