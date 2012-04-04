@@ -113,8 +113,7 @@ static int apanic_write_console_mmc(unsigned int offset)
 	return total_len;
 }
 
-static int apanic_mmc(struct notifier_block *this, unsigned long event,
-			void *ptr)
+static int apanic_mmc(struct notifier_block *this, unsigned long event, void *ptr)
 {
 	struct apanic_data *ctx = &drv_ctx;
 	struct panic_header *hdr;
@@ -196,7 +195,7 @@ static int apanic_mmc(struct notifier_block *this, unsigned long event,
 		       "to panic log (%d)\n", console_len);
 		console_len = 0;
 	}
-
+goto out;
 	log_buf_clear();
 	for (con = console_drivers; con; con = con->next)
 		con->flags &= ~CON_ENABLED;
@@ -332,8 +331,7 @@ static int apanic_dbg_get(void *data, u64 *val)
 {
 	printk(KERN_EMERG "*** kernel console dumped via debugfs ***\n");
 
-	//break the system
-	//apanic_mmc(NULL, 0, NULL);
+	apanic_mmc(NULL, 0, NULL);
 	*val = did_panic;
 
 	pr_info("%s: data=%p, val=%p, in_panic=%d, did_panic=%d\n", __func__,
@@ -353,16 +351,17 @@ static int apanic_dbg_sector_get(void *data, u64 *val)
 	struct apanic_data *ctx = &drv_ctx;
 	struct apanic_mmc_platform_data *pdata = ctx->dev;
 	*val = pdata->start_sector;
-	printk(KERN_DEBUG "%s: sector: 0x%llx (%llu)\n", __func__, pdata->start_sector, pdata->start_sector);
+	printk(KERN_DEBUG "%s: start sector=0x%llx(%llu) size=%llu %zu-bytes sectors\n", __func__,
+		pdata->start_sector, pdata->start_sector, pdata->sectors, pdata->sector_size);
 	return 0;
 }
 static int apanic_dbg_sector_set(void *data, u64 val)
 {
-        struct apanic_data *ctx = &drv_ctx;
-        struct apanic_mmc_platform_data *pdata = ctx->dev;
-        pdata->start_sector = val;
-        printk(KERN_DEBUG "%s: set sector to 0x%llx (%llu)\n", __func__, pdata->start_sector, pdata->start_sector);
-        return 0;
+	struct apanic_data *ctx = &drv_ctx;
+	struct apanic_mmc_platform_data *pdata = ctx->dev;
+	pdata->start_sector = val;
+	printk(KERN_DEBUG "%s: sector set to 0x%llx (%llu)\n", __func__, pdata->start_sector, pdata->start_sector);
+	return 0;
 }
 DEFINE_SIMPLE_ATTRIBUTE(apanic_dbg_sector_fops, apanic_dbg_sector_get, apanic_dbg_sector_set, "%llu\n");
 #endif
@@ -381,16 +380,15 @@ static int apanic_handle_mmc_probe(struct platform_device *pdev)
 	}
 
 	ctx->dev = pdata;
-	printk(KERN_INFO DRVNAME "on host %d at 0x%llX of size %llu with %u-"
-	       "bytes sectors\n", pdata->id, pdata->start_sector,
-	                         pdata->sectors, pdata->sector_size);
+	printk(KERN_INFO DRVNAME "on host %d at 0x%llX with size of %llukB %llu x %u-bytes sectors\n",
+		pdata->id, pdata->start_sector,
+		pdata->sectors * pdata->sector_size / 1024, pdata->sectors, pdata->sector_size);
 
 	/* FIXME: this should be sysfs */
 	drv_ctx.proc_annotate = create_proc_entry("apanic_annotate",
 	                                          S_IFREG | S_IRUGO, NULL);
 	if (!drv_ctx.proc_annotate)
-		printk(KERN_ERR "%s: failed creating procfile\n",
-			   __func__);
+		printk(KERN_ERR "%s: failed creating procfile\n", __func__);
 	else {
 		drv_ctx.proc_annotate->read_proc = NULL;
 		drv_ctx.proc_annotate->write_proc = apanic_proc_annotate;
@@ -416,8 +414,10 @@ int __init apanic_handle_mmc_init(void)
 	result = platform_driver_register(&apanic_handle_mmc_driver);
 	if (result == 0) {
 		atomic_notifier_chain_register(&panic_notifier_list, &panic_blk);
-		debugfs_create_file("apanic", 0644, NULL, NULL, &apanic_dbg_fops);
-		debugfs_create_file("apanic_sector", 0644, NULL, NULL, &apanic_dbg_sector_fops);
+#ifdef CONFIG_DEBUG_FS
+		debugfs_create_file("apanic_mmc", 0644, NULL, NULL, &apanic_dbg_fops);
+		debugfs_create_file("apanic_mmc_sector", 0644, NULL, NULL, &apanic_dbg_sector_fops);
+#endif
 		drv_ctx.bounce = (void *) __get_free_page(GFP_KERNEL);
 		printk(KERN_INFO DRVNAME "kernel panic handler initialized\n");
 	}

@@ -576,25 +576,27 @@ static struct notifier_block panic_blk = {
 	.notifier_call	= apanic,
 };
 
+#ifdef CONFIG_DEBUG_FS
 static int panic_dbg_get(void *data, u64 *val)
 {
 	apanic(NULL, 0, NULL);
 	return 0;
 }
-
 static int panic_dbg_set(void *data, u64 val)
 {
 	BUG();
 	return -1;
 }
-
 DEFINE_SIMPLE_ATTRIBUTE(panic_dbg_fops, panic_dbg_get, panic_dbg_set, "%llu\n");
+#endif
 
 int __init apanic_init(void)
 {
 	register_mtd_user(&mtd_panic_notifier);
 	atomic_notifier_chain_register(&panic_notifier_list, &panic_blk);
+#ifdef CONFIG_DEBUG_FS
 	debugfs_create_file("apanic", 0644, NULL, NULL, &panic_dbg_fops);
+#endif
 	memset(&drv_ctx, 0, sizeof(drv_ctx));
 	drv_ctx.bounce = (void *) __get_free_page(GFP_KERNEL);
 	INIT_WORK(&proc_removal_work, apanic_remove_proc_work);
