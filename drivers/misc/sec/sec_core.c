@@ -420,11 +420,18 @@ static int GetFuseDataSize (NvDdkFuseDataType type, unsigned int* pSize)
 
 static NvError ReadByteFuseData (NvDdkFuseDataType type, unsigned char *Fuse)
 {
-    unsigned int size = 0;
+    unsigned int size = 0, f = 0, ret = 0;
+
     GetFuseDataSize (type, &size);
     NvDdkFuseSense ();
     NvDdkFuseClear ();
-    return NvDdkFuseGet (type, Fuse, &size);
+    ret = NvDdkFuseGet (type, Fuse, &size);
+    printk(KERN_WARNING "%s: type=%d size=%d : ", __func__, (int) type, size);
+    while (f < size) {
+        printk("%02x ",Fuse[f]);
+        f++;
+    }
+    return ret;
 }
 #endif
 
