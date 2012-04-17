@@ -230,6 +230,11 @@ kernel: $(CONFIG_OUT)
 # make kernel modules
 #--------------------------
 # We need to check warning no matter if build passed, failed or interuptted
+
+LINUXVER=$(shell strings "$(KERNEL_BUILD_DIR)/.config"|grep 'Linux kernel version:'|head -n1|cut -f 5 -d ' ')
+
+MODULES_CFLAGS += -DUTS_RELEASE=\\\"$(LINUXVER)\\\"
+
 .PHONY: kernel_modules
 kernel_modules: $(CONFIG_OUT) | $(DEPMOD)
 	@echo -e ${CL_PFX}"kernel_modules"${CL_RST}
@@ -237,6 +242,7 @@ kernel_modules: $(CONFIG_OUT) | $(DEPMOD)
 	$(MAKE) -C $(KERNEL_SRC_DIR) ARCH=arm $(KERN_FLAGS) \
 		CROSS_COMPILE=$(KERNEL_CROSS_COMPILE) O=$(KERNEL_BUILD_DIR) \
 		DEPMOD=$(DEPMOD) INSTALL_MOD_PATH=$(KERNEL_BUILD_DIR) \
+		EXTRA_CFLAGS="$(MODULES_CFLAGS)" \
 		modules 2>&1 | tee $(KMOD_ERR_LOG)
 	$(call kernel-check-gcc-warnings, $(KMOD_ERR_LOG))
 
@@ -298,6 +304,8 @@ API_MAKE = make PREFIX=$(KERNEL_BUILD_DIR) \
 		PROJROOT=$(PROJROOT) \
 		LINUXSRCDIR=$(KERNEL_SRC_DIR) \
 		LINUXBUILDDIR=$(KERNEL_BUILD_DIR) \
+		LINUXVER=$(LINUXVER) \
+		CUSTOM_FLAGS="$(MODULES_CFLAGS)"
 
 .PHONY: wlan_dhd
 wlan_dhd: $(CONFIG_OUT)
