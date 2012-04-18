@@ -75,3 +75,5 @@ GTAGS
 *.orig
 *~
 \#*#
+
+arch/arm/configs/__ext_olympus_defconfig
