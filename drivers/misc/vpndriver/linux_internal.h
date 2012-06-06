@@ -302,6 +302,14 @@ typedef struct sk_buff *SshHookSkb;
 #define SSH_LINUX_IP6CB(skbp) ((struct inet6_skb_parm *) ((skbp)->cb))
 #endif /* IP6CB */
 
+/* Stating from linux 2.6.35 the IPv6 address list needs to be iterated
+   using the list_for_each_* macros. */
+#ifdef LINUX_RT_DST_IS_NOT_IN_UNION
+#define SSH_RT_DST(_rt) ((_rt)->dst)
+#else /* LINUX_RT_DST_IS_NOT_IN_UNION */
+#define SSH_RT_DST(_rt) ((_rt)->u.dst)
+#endif /* LINUX_RT_DST_IS_NOT_IN_UNION */
+
 /****************************** Statistics helper macros *********************/
 
 #ifdef DEBUG_LIGHT

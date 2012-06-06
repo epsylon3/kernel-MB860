@@ -763,6 +763,25 @@ ssh_interceptor_packet_out(int pf,
       { interceptor->stats.num_passthrough++; });
       return NF_ACCEPT;
     }
+
+#ifdef SSH_IPSEC_IP_ONLY_INTERCEPTOR
+#ifdef LINUX_IP_ONLY_PASSTHROUGH_NDISC
+  if (pf == PF_INET6 &&
+      skbp->sk == dev_net(skbp->dev)->ipv6.ndisc_sk)
+    {
+      SSH_DEBUG(SSH_D_NICETOKNOW,
+		("Neighbour discovery packet passed through"));
+      SSH_DEBUG_HEXDUMP(SSH_D_PCKDMP,
+			("length %d dumping %d bytes",
+			 (int) skbp->len, (int) skb_headlen(skbp)),
+			skbp->data, skb_headlen(skbp));
+      SSH_LINUX_STATISTICS(interceptor,
+      { interceptor->stats.num_passthrough++; });
+      return NF_ACCEPT;
+    }
+#endif /* LINUX_IP_ONLY_PASSTHROUGH_NDISC */
+#endif /* SSH_IPSEC_IP_ONLY_INTERCEPTOR */
+
 #endif /* SSH_LINUX_INTERCEPTOR_IPV6 */
 
   /* Assert that we are about to intercept the packet from 

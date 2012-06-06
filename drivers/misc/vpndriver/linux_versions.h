@@ -30,9 +30,9 @@
 #endif /* KERNEL_VERSION */
 
 /* 2.6.32 is the highest version currently supported */
-#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,32)
-#error "Kernel versions after 2.6.32 are not supported"
-#endif /* LINUX_VERSION_CODE > KERNEL_VERSION(2,6,32) */
+#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,35)
+#error "Kernel versions after 2.6.35 are not supported"
+#endif /* LINUX_VERSION_CODE > KERNEL_VERSION(2,6,35) */
 
 /* 2.4 is not supported */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
@@ -136,5 +136,23 @@
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,31)
 #define LINUX_HAS_SKB_DST_FUNCTIONS 1
 #endif /* >= 2.6.31 */
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,32)
+#endif /* >= 2.6.32 */
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,33)
+#endif /* >= 2.6.33 */
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,34)
+#endif /* >= 2.6.34 */
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35)
+#define LINUX_DST_POP_IS_SKB_DST_POP 1
+#define LINUX_IP_ONLY_PASSTHROUGH_NDISC 1
+#endif /* >= 2.6.35 */
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,36)
+#define LINUX_RT_DST_IS_NOT_IN_UNION 1
+#endif /* >= 2.6.36 */
 
 #endif /* LINUX_VERSION_H */

@@ -186,11 +186,18 @@ ssh_interceptor_route_output_ipv4(SshInterceptor interceptor,
       goto fail;
     }
 
+
   /* Get the gateway, mtu and ifnum */
 
   SSH_IP4_DECODE(result->gw, &rt->rt_gateway);
-  result->mtu = SSH_DST_MTU(&rt->u.dst);
-  result->ifnum = rt->u.dst.dev->ifindex;
+  result->mtu = SSH_DST_MTU(&SSH_RT_DST(rt));
+
+  if (SSH_RT_DST(rt).dev == NULL)
+  {
+      goto fail;
+  }
+
+  result->ifnum = SSH_RT_DST(rt).dev->ifindex;
   rt_type = rt->rt_type;
 
 #ifdef DEBUG_LIGHT
@@ -241,18 +248,18 @@ ssh_interceptor_route_output_ipv4(SshInterceptor interceptor,
 	    ("Route result: dst %s via %s ifnum %d[%s] mtu %d type %s [%d]",
 	     dst_buf, ssh_ipaddr_print(result->gw, src_buf, sizeof(src_buf)),
 	     (int) result->ifnum,
-	     (rt->u.dst.dev->name ? rt->u.dst.dev->name : "none"),
+	     (SSH_RT_DST(rt).dev->name ? SSH_RT_DST(rt).dev->name : "none"),
 	     result->mtu, rt_type_str, rt_type));
 
 #ifdef SSH_IPSEC_IP_ONLY_INTERCEPTOR
 #ifdef LINUX_FRAGMENTATION_AFTER_NF_POST_ROUTING
   /* Check if need to create a child dst_entry with interface MTU. */
   if ((selector & SSH_INTERCEPTOR_ROUTE_KEY_FLAG_TRANSFORM_APPLIED)
-      && rt->u.dst.child == NULL)
+      && SSH_RT_DST(rt).child == NULL)
     {
-      if (interceptor_route_create_child_dst(&rt->u.dst) == NULL)
+      if (interceptor_route_create_child_dst(&SSH_RT_DST(rt)) == NULL)
 	SSH_DEBUG(SSH_D_FAIL, ("Could not create child dst_entry for dst %p",
-			       &rt->u.dst));
+			       &SSH_RT_DST(rt)));
     }
 #endif /* LINUX_FRAGMENTATION_AFTER_NF_POST_ROUTING */
 #endif /* SSH_IPSEC_IP_ONLY_INTERCEPTOR */
@@ -439,7 +446,7 @@ ssh_interceptor_route_input_ipv4(SshInterceptor interceptor,
 	    ("Route result: dst %s via %s ifnum %d[%s] mtu %d type %s [%d]",
 	     dst_buf, ssh_ipaddr_print(result->gw, src_buf, sizeof(src_buf)),
 	     (int) result->ifnum,
-	     (rt->u.dst.dev->name ? rt->u.dst.dev->name : "none"),
+	     (SSH_RT_DST(rt).dev->name ? SSH_RT_DST(rt).dev->name : "none"),
 	     result->mtu, rt_type_str, rt_type));
 
 #ifdef SSH_IPSEC_IP_ONLY_INTERCEPTOR
@@ -570,7 +577,7 @@ ssh_interceptor_route_output_ipv6(SshInterceptor interceptor,
   else
       SSH_IP6_DECODE(result->gw, &rt_key.fl6_dst.s6_addr);
   
-  result->mtu = SSH_DST_MTU(&rt->u.dst); 
+  result->mtu = SSH_DST_MTU(&SSH_RT_DST(rt));
  
   /* The interface number might not be ok, but that is a problem
      for the recipient of the routing information. */
@@ -878,7 +885,7 @@ ssh_interceptor_reroute_skb_ipv4(SshInterceptor interceptor,
 	}
 
       /* Make a new dst because we just rechecked the route. */
-      SSH_SKB_DST_SET(skbp, dst_clone(&rt->u.dst));
+      SSH_SKB_DST_SET(skbp, dst_clone(&SSH_RT_DST(rt)));
       
       /* Release the routing table entry ; otherwise a memory leak occurs
 	 in the route entry table. */
@@ -905,7 +912,11 @@ ssh_interceptor_reroute_skb_ipv4(SshInterceptor interceptor,
      
       /* Pop dst stack and use the child entry with interface MTU 
 	 for sending the packet. */
-      SSH_SKB_DST_SET(skbp, dst_pop(SSH_SKB_DST(skbp)));
+#ifdef LINUX_DST_POP_IS_SKB_DST_POP
+      skb_dst_set(skbp, dst_clone(skb_dst_pop(skbp)));
+#else /* LINUX_DST_POP_IS_SKB_DST_POP */
+      skb_dst_set(skbp, dst_pop(skb_dst(skbp)));
+#endif /*LINUX_DST_POP_IS_SKB_DST_POP */
     }
 #endif /* LINUX_FRAGMENTATION_AFTER_NF_POST_ROUTING */
 #endif /* SSH_IPSEC_IP_ONLY_INTERCEPTOR */
