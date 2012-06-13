@@ -1390,14 +1390,8 @@ static int do_touch_multi_msg(struct qtouch_ts_data *ts, struct qtm_object *obj,
 		QTOUCH_INFO4("%s: needLiftOff= %s\n", __func__, (needLiftOff ? "Yes" : "No"));
 		if ( needLiftOff )
 		{
-			for (i = 0; i < ts->pdata->multi_touch_cfg.num_touch; i++) 
-			{
-				if ( !ts->suspendMode )
-				{
-					/* Empty sync releases fingers */
-					input_mt_sync(ts->input_dev);
-				}
-			}
+			/* Empty sync releases fingers */
+			input_mt_sync(ts->input_dev);
 			input_sync(ts->input_dev);
 		}
 		/* Generate appropriate key based on the range if X for each button */
@@ -1441,6 +1435,7 @@ static int do_touch_multi_msg(struct qtouch_ts_data *ts, struct qtm_object *obj,
 		{
 			/* Empty sync releases fingers */
 			input_mt_sync(ts->input_dev);
+			input_sync(ts->input_dev);
 			ts->finger_data[1].x_data = 0;
 			ts->finger_data[1].y_data = 0;
 			ts->finger_data[1].w_data = 0;
@@ -2502,11 +2497,10 @@ static int qtouch_ts_resume(struct i2c_client *client)
 			__func__, i, ts->finger_data[i].down);
 		if (ts->finger_data[i].down == 0)
 			continue;
-		input_report_abs(ts->input_dev, ABS_MT_PRESSURE, 0);
-		input_mt_sync(ts->input_dev);
 		memset(&ts->finger_data[i], 0,
 			sizeof(struct coordinate_map));
 	}
+	input_mt_sync(ts->input_dev);
 	input_sync(ts->input_dev);
 
 #ifdef CONFIG_XMEGAT_USE_RESET_TO_RESUME
