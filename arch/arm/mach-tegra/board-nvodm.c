@@ -461,7 +461,11 @@ static void __init tegra_setup_sdhci(void) {
 			plat = &tegra_sdhci_platform[tegra_sdhci_boot_device];
 			if (strcmp("mbr", tegra_nand_plat.parts[i].name))
 				continue;
-			plat->offset = tegra_nand_plat.parts[i].offset;
+
+			pr_notice("%s: platform mbr offset set to 0x%llx, boot device=sdhci.%d\n",
+				__func__, tegra_nand_plat.parts[i].offset, tegra_sdhci_boot_device);
+
+			plat->offset = (uint32_t) tegra_nand_plat.parts[i].offset;
 		}
 #endif
 		platform_device_register(&tegra_sdhci_devices[tegra_sdhci_boot_device]);
@@ -586,9 +590,10 @@ static void __init tegra_setup_hsuart(void)
 		struct tegra_serial_platform_data *plat;
 		char name[16];
 
+#ifndef CONFIG_MOT_SERIAL_JACK
 		if (i==dbg_id)
 			continue;
-
+#endif
 		plat = &tegra_uart_platform[i];
 
 		snprintf(name, sizeof(name), "%s.%d",
@@ -893,6 +898,7 @@ static noinline void __init tegra_setup_kbc(void)
 					sc = vkeys[k]->pVirtualKeyTable[sc];
 					if (!sc) continue;
 					pdata->keymap[kbc_indexof(i,j)]=sc;
+					pr_info("kbc: row/col=%d,%d(%d) = sc %d(0x%x)\n", i,j, kbc_indexof(i,j), sc, sc);
 				}
 
                         }
