@@ -31,30 +31,21 @@
 #include <linux/io.h>
 #include <linux/interrupt.h>
 #include <linux/clk.h>
-#include <linux/proc_fs.h>
 #include <mach/kbc.h>
 #include <mach/pmc.h>
 #include <mach/clk.h>
 #include <nvodm_kbc.h>
-#include <asm/uaccess.h>
 
 #define KBC_CONTROL_0	0
 #define KBC_INT_0	4
 #define KBC_ROW_CFG0_0	8
 #define KBC_COL_CFG0_0	0x18
-#define KBC_INIT_DLY_0	0x28
 #define KBC_RPT_DLY_0	0x2c
 #define KBC_KP_ENT0_0	0x30
 #define KBC_KP_ENT1_0	0x34
 #define KBC_ROW0_MASK_0	0x38
 
 #define res_size(res)	((res)->end - (res)->start + 1)
-
-#define TAG "tegra-kbc"
-static struct proc_dir_entry *proc_root = NULL;
-static unsigned int repeat_cycle = 0;
-static unsigned int repeat_delay = 0;
-static struct tegra_kbc *pkbc = NULL;
 
 struct tegra_kbc {
 	void __iomem *mmio;
@@ -125,9 +116,9 @@ static int tegra_kbc_resume(struct platform_device *pdev)
 		tegra_kbc_setup_wakekeys(kbc, false);
 		tegra_configure_dpd_kbc(0, 0);
 	} else if (kbc->idev->users) {
-		printk("tegra-kbc: reopen kbc in resume");
-		tegra_kbc_open(kbc->idev);
-	}
+     		 printk("tegra_kbc : reopen kbc in resume");
+       		tegra_kbc_open(kbc->idev);
+        }
 	return 0;
 }
 #endif
@@ -354,7 +345,6 @@ static int __devexit tegra_kbc_remove(struct platform_device *pdev)
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	release_mem_region(res->start, res_size(res));
 
-	pkbc = NULL;
 	kfree(kbc);
 	return 0;
 }
@@ -383,72 +373,6 @@ static irqreturn_t tegra_kbc_isr(int irq, void *args)
 	queue_work(kbc->kbc_work_queue, &kbc->key_repeat);
 	return IRQ_HANDLED;
 }
-
-/**
- * proc functions to tune repeat delay and speed
- */
-static int tegra_proc_speed_read(char *buffer, char **start, off_t offset, int count, int *eof, void *data) {
-	int ret = 0;
-	if (pkbc) {
-		repeat_cycle = readl(pkbc->mmio + KBC_RPT_DLY_0);
-	}
-	if (!offset) ret = scnprintf(buffer, count, "%u\n", repeat_cycle);
-	return ret;
-}
-
-static int tegra_proc_speed_write(struct file *filp, const char __user *buffer, unsigned long len, void *data) {
-	char buf[32];
-	if (!len || len >= sizeof(buf)) return -ENOSPC;
-	if (copy_from_user(buf, buffer, len)) return -EFAULT;
-	buf[len] = 0;
-	if (sscanf(buf, "%u", &repeat_cycle) > 0 && pkbc != NULL) {
-		writel(repeat_cycle, pkbc->mmio + KBC_RPT_DLY_0);
-	}
-	return len;
-}
-
-static int tegra_proc_delay_read(char *buffer, char **start, off_t offset, int count, int *eof, void *data) {
-	int ret = 0;
-	if (pkbc) {
-		repeat_delay = readl(pkbc->mmio + KBC_INIT_DLY_0);
-	}
-	if (!offset) ret = scnprintf(buffer, count, "%u\n", repeat_delay);
-	return ret;
-}
-
-static int tegra_proc_delay_write(struct file *filp, const char __user *buffer, unsigned long len, void *data) {
-	char buf[32];
-	if (!len || len >= sizeof(buf)) return -ENOSPC;
-	if (copy_from_user(buf, buffer, len)) return -EFAULT;
-	buf[len] = 0;
-	if (sscanf(buf, "%u", &repeat_delay) > 0 && pkbc != NULL) {
-		writel(repeat_delay, pkbc->mmio + KBC_INIT_DLY_0);
-	}
-	return len;
-}
-
-static int tegra_proc_repoll_read(char *buffer, char **start, off_t offset, int count, int *eof, void *data) {
-	int ret = 0;
-	unsigned int repoll_time = 0;
-	if (pkbc) {
-		repoll_time = pkbc->repoll_time;
-	}
-	if (!offset) ret = scnprintf(buffer, count, "%u\n", repoll_time);
-	return ret;
-}
-
-static int tegra_proc_repoll_write(struct file *filp, const char __user *buffer, unsigned long len, void *data) {
-	char buf[32];
-	unsigned int repoll_time;
-	if (!len || len >= sizeof(buf)) return -ENOSPC;
-	if (copy_from_user(buf, buffer, len)) return -EFAULT;
-	buf[len] = 0;
-	if (sscanf(buf, "%u", &repoll_time) > 0 && pkbc != NULL) {
-		pkbc->repoll_time = (unsigned long) repoll_time;
-	}
-	return len;
-}
-
 
 static int __init tegra_kbc_probe(struct platform_device *pdev)
 {
@@ -558,10 +482,7 @@ static int __init tegra_kbc_probe(struct platform_device *pdev)
 	kbc->repoll_time = 5 + (16+pdata->debounce_cnt)*nr + pdata->repeat_cnt;
 	kbc->repoll_time = (kbc->repoll_time + 31) / 32;
 
-	printk(KERN_INFO "tegra-kbc: repoll_time=0x%x, repeat_cnt=0x%x",
-	                             kbc->repoll_time, pdata->repeat_cnt);
-
-	kbc->idev->evbit[0] = BIT_MASK(EV_KEY) | BIT_MASK(EV_REP);
+	kbc->idev->evbit[0] = BIT_MASK(EV_KEY);
 
 	for (i=0; i<KBC_MAX_COL; i++) {
 		if (!cols[i]) continue;
@@ -600,7 +521,7 @@ static int __init tegra_kbc_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "failed to register input device\n");
 		goto fail;
 	}
-	pkbc = kbc;
+
 	device_init_wakeup(&pdev->dev, 1);
 	return 0;
 
@@ -628,26 +549,11 @@ static struct platform_driver tegra_kbc_driver = {
 
 static void __exit tegra_kbc_exit(void)
 {
-	remove_proc_entry("repeat_cycle", proc_root);
-	remove_proc_entry("repeat_delay", proc_root);
-	remove_proc_entry("repoll_time", proc_root);
-	remove_proc_entry(TAG, NULL);
-	proc_root = NULL;
 	platform_driver_unregister(&tegra_kbc_driver);
 }
 
 static int __devinit tegra_kbc_init(void)
 {
-	struct proc_dir_entry *proc_entry;
-
-	proc_root = proc_mkdir(TAG, NULL);
-	proc_entry = create_proc_read_entry("repeat_cycle", 0664, proc_root, tegra_proc_speed_read, NULL);
-	proc_entry->write_proc = tegra_proc_speed_write;
-	proc_entry = create_proc_read_entry("repeat_delay", 0664, proc_root, tegra_proc_delay_read, NULL);
-	proc_entry->write_proc = tegra_proc_delay_write;
-	proc_entry = create_proc_read_entry("repoll_time", 0644, proc_root, tegra_proc_repoll_read, NULL);
-	proc_entry->write_proc = tegra_proc_repoll_write;
-
 	return platform_driver_register(&tegra_kbc_driver);
 }
 
