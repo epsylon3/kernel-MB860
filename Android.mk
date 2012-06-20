@@ -311,7 +311,12 @@ wlan_dhd_clean:
 #
 # install kernel modules into system image
 #-------------------------------------------------
-kernel_install: kernel_modules_install wlan_dhd
+ifeq ($(TARGET_BUILD_KERNEL),true)
+.PHONY: $(TARGET_PREBUILT_KERNEL)
+$(TARGET_PREBUILT_KERNEL): kernel_install
+endif
+
+kernel_install: kernel_config kernel kernel_modules_install wlan_dhd
 	@echo -e ${CL_PFX}"Install kernel and modules..."${CL_RST}
 	mkdir -p $(TARGET_MOD_INSTALL)
 	cp $(KERNEL_BUILD_DIR)/arch/arm/boot/zImage $(PRODUCT_OUT)/kernel
@@ -329,10 +334,6 @@ kernel_install: kernel_modules_install wlan_dhd
 
 #-------------------------------------------------
 ifeq ($(TARGET_BUILD_KERNEL),true)
-.PHONY: $(TARGET_PREBUILT_KERNEL)
-
-$(TARGET_PREBUILT_KERNEL): kernel_config kernel kernel_modules_install wlan_dhd kernel_install
-
 
 # To update the device tree kernel (prebuilt kernel and modules)
 #-------------------------------------------------
