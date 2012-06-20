@@ -42,6 +42,9 @@ $(call add-clean-step, rm -rf $(PRODUCT_OUT)/obj/kernel_intermediates)
 
 $(call add-clean-step, rm -f $(PRODUCT_OUT)/kernel)
 $(call add-clean-step, rm -f $(PRODUCT_OUT)/*.img)
+$(call add-clean-step, rm -rf $(PRODUCT_OUT)/ramdisk*)
+$(call add-clean-step, rm -rf $(PRODUCT_OUT)/root)
+$(call add-clean-step, rm -rf $(PRODUCT_OUT)/recovery)
 
 $(call add-clean-step, rm -rf $(PRODUCT_OUT)/system/lib/modules)
 
