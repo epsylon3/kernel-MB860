@@ -311,7 +311,7 @@ wlan_dhd_clean:
 #
 # install kernel modules into system image
 #-------------------------------------------------
-kernel_install: wlan_dhd
+kernel_install: kernel_modules_install wlan_dhd
 	@echo -e ${CL_PFX}"Install kernel and modules..."${CL_RST}
 	mkdir -p $(TARGET_MOD_INSTALL)
 	cp $(KERNEL_BUILD_DIR)/arch/arm/boot/zImage $(PRODUCT_OUT)/kernel
@@ -319,11 +319,13 @@ kernel_install: wlan_dhd
 	find $(TARGET_MOD_INSTALL)/* -maxdepth 0 -type d -exec rm -r {} \;
 	find $(TARGET_MOD_INSTALL) -name "*.ko" -exec $(KERNEL_CROSS_COMPILE)strip --strip-debug {} \;
 	# add important kernel modules in bootimage, to always have them
+	@rm -rf $(PRODUCT_OUT)/root/lib
+	@rm -rf $(PRODUCT_OUT)/recovery/root/lib
 	mkdir -p $(PRODUCT_OUT)/root/lib
 	cp $(TARGET_MOD_INSTALL)/dhd.ko $(PRODUCT_OUT)/root/lib/
 	cp $(TARGET_MOD_INSTALL)/aev.ko $(PRODUCT_OUT)/root/lib/
 	cp $(TARGET_MOD_INSTALL)/evfwd.ko $(PRODUCT_OUT)/root/lib/
-	touch $(PRODUCT_OUT)/kernel_post_install
+	touch $(PRODUCT_OUT)/kernel_install
 
 #-------------------------------------------------
 ifeq ($(TARGET_BUILD_KERNEL),true)
